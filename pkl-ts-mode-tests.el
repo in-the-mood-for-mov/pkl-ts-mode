@@ -114,6 +114,47 @@ birds = \"\"\"
   \"\"\"
 "))
 
+;;; --- String interpolation syntax ---
+
+(defun pkl-ts-mode-test-scan-lists (source pos)
+  "Insert SOURCE, propertize, scan-lists backward/forward from POS.
+Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
+  (with-temp-buffer
+    (pkl-ts-mode)
+    (insert source)
+    (syntax-propertize (point-max))
+    (cons (scan-lists pos -1 1)
+          (scan-lists pos 1 1))))
+
+(ert-deftest pkl-ts-mode-scan-lists-interpolation ()
+  "Parens inside \\(...) interpolation are visible to scan-lists."
+  ;; x = "hello \(name)"
+  ;; Positions:  5678901234567890
+  ;; \=12, (=13, )=18, "=19
+  (let ((result (pkl-ts-mode-test-scan-lists
+                 "x = \"hello \\(name)\"" 15)))
+    (should (equal (car result) 13))    ; ( found
+    (should (equal (cdr result) 19))))  ; ) found
+
+(ert-deftest pkl-ts-mode-scan-lists-interpolation-adjacent ()
+  "Adjacent interpolations each have visible parens."
+  ;; x = "\(a)\(b)"
+  (let ((r1 (pkl-ts-mode-test-scan-lists "x = \"\\(a)\\(b)\"" 8))
+        (r2 (pkl-ts-mode-test-scan-lists "x = \"\\(a)\\(b)\"" 12)))
+    (should (equal (car r1) 7))
+    (should (equal (car r2) 11))
+    (should (equal (cdr r1) 10))
+    (should (equal (cdr r2) 14))))
+
+(ert-deftest pkl-ts-mode-scan-lists-interpolation-custom-delimiters ()
+  "Parens inside interpolations with custom delimiters are visible to scan-lists."
+  (let ((r1 (pkl-ts-mode-test-scan-lists "x = #\"\\#(a)\\(b)\"#" 10))
+        (r2 (pkl-ts-mode-test-scan-lists "x = #\"\\#(a)\\(b)\"#" 14)))
+    (should (equal (car r1) 9))
+    (should (equal (car r2) 13))
+    (should (equal (cdr r1) 12))
+    (should (equal (cdr r2) 16))))
+
 (provide 'pkl-ts-mode-tests)
 
 ;;; pkl-ts-mode-tests.el ends here
