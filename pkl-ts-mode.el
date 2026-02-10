@@ -114,7 +114,20 @@
      ((parent-is "parameterList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "argumentList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "typeArgumentList") parent-bol pkl-ts-mode-indent-offset)
+     ((parent-is "mlStringLiteralExpr") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "blockComment") prev-adaptive-prefix 0)
+     ;; Lines inside a multiline string where node is nil but parent
+     ;; (from treesit-node-on) is mlStringLiteralPart.  The offset
+     ;; preserves existing relative indentation within the string.
+     ((lambda (node parent &rest _)
+        (and (null node)
+             (equal (treesit-node-type parent) "mlStringLiteralPart")))
+      parent-bol
+      (lambda (_node _parent bol &rest _)
+        (+ (symbol-value 'pkl-ts-mode-indent-offset)
+           (save-excursion
+             (goto-char bol)
+             (current-column)))))
      (no-node parent-bol 0)))
   "Tree-sitter indentation rules for Pkl.")
 
