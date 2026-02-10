@@ -13,6 +13,10 @@
   '(pkl "https://github.com/apple/tree-sitter-pkl")
   "Tree-sitter grammar source for Pkl.")
 
+(defun pkl-ts-mode--anonymous-node-p (node)
+  "Return non-nil if NODE is an anonymous tree-sitter node."
+  (not (treesit-node-check node 'named)))
+
 (defvar pkl-ts-mode--font-lock-settings
   (treesit-font-lock-rules
    :language 'pkl
@@ -23,9 +27,22 @@
 
    :language 'pkl
    :feature 'string
-   '((slStringLiteralExpr) @font-lock-string-face
-     (mlStringLiteralExpr) @font-lock-string-face
+   '((slStringLiteralExpr
+      _ @font-lock-string-face
+      (:pred pkl-ts-mode--anonymous-node-p @font-lock-string-face))
+     (slStringLiteralPart) @font-lock-string-face
+     (mlStringLiteralExpr
+      _ @font-lock-string-face
+      (:pred pkl-ts-mode--anonymous-node-p @font-lock-string-face))
+     (mlStringLiteralPart) @font-lock-string-face
      (stringConstant) @font-lock-string-face)
+
+   :language 'pkl
+   :feature 'interpolation
+   :override t
+   '((stringInterpolation
+      _ @font-lock-escape-face
+      (:pred pkl-ts-mode--anonymous-node-p @font-lock-escape-face)))
 
    :language 'pkl
    :feature 'escape-sequence
@@ -162,7 +179,7 @@ Install it with M-x treesit-install-language-grammar RET pkl RET"))
   (setq-local treesit-font-lock-feature-list
               '((comment string)
                 (keyword type constant number)
-                (builtin function property variable annotation escape-sequence)
+                (builtin function property variable annotation escape-sequence interpolation)
                 (operator delimiter bracket)))
 
   (treesit-major-mode-setup))

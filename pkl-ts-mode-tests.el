@@ -2,9 +2,7 @@
 
 ;;; Commentary:
 
-;; Indentation tests for pkl-ts-mode.  Each test inserts Pkl source into a
-;; temporary buffer, activates pkl-ts-mode, re-indents the entire buffer,
-;; and verifies the result matches the expected output.
+;; Tests for pkl-ts-mode covering indentation, syntax, and font-lock.
 
 ;;; Code:
 
@@ -154,6 +152,95 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
     (should (equal (car r2) 13))
     (should (equal (cdr r1) 12))
     (should (equal (cdr r2) 16))))
+
+;;; --- Font-lock: string interpolation ---
+
+(defun pkl-ts-mode-test-faces (source)
+  "Insert SOURCE, fontify, return list of (START END FACE) spans."
+  (with-temp-buffer
+    (pkl-ts-mode)
+    (insert source)
+    (font-lock-ensure)
+    (let (result pos)
+      (setq pos (point-min))
+      (while (< pos (point-max))
+        (let ((face (get-text-property pos 'face))
+              (next (next-single-property-change pos 'face nil (point-max))))
+          (when face
+            (push (list pos next face) result))
+          (setq pos next)))
+      (nreverse result))))
+
+(defun pkl-ts-mode-test-face-at (source offset)
+  "Return the face at OFFSET (1-based) after fontifying SOURCE."
+  (with-temp-buffer
+    (pkl-ts-mode)
+    (insert source)
+    (font-lock-ensure)
+    (get-text-property offset 'face)))
+
+(ert-deftest pkl-ts-mode-font-lock-string-no-interpolation ()
+  "Plain string without interpolation is entirely string-faced."
+  (let ((faces (pkl-ts-mode-test-faces "x = \"hello world\"")))
+    ;; Property name "x"
+    (should (cl-some (lambda (f) (eq (nth 2 f) 'font-lock-property-name-face)) faces))
+    ;; All string-related spans should be font-lock-string-face
+    (let ((string-spans (cl-remove-if-not
+                         (lambda (f) (eq (nth 2 f) 'font-lock-string-face))
+                         faces)))
+      (should (> (length string-spans) 0)))))
+
+(ert-deftest pkl-ts-mode-font-lock-interpolation-delimiters ()
+  "Interpolation delimiters \\( and ) get escape face, not string face."
+  ;; "hello \(name) world"
+  ;; 123456789...
+  (let* ((src "x = \"hello \\(name) world\""))
+    ;; \( should be escape face
+    (should (eq (pkl-ts-mode-test-face-at src 12) 'font-lock-escape-face))
+    ;; ) should be escape face
+    (should (eq (pkl-ts-mode-test-face-at src 18) 'font-lock-escape-face))
+    ;; "name" should NOT be string face
+    (should (not (eq (pkl-ts-mode-test-face-at src 14) 'font-lock-string-face)))
+    ;; Surrounding text is still string face
+    (should (eq (pkl-ts-mode-test-face-at src 6) 'font-lock-string-face))
+    (should (eq (pkl-ts-mode-test-face-at src 19) 'font-lock-string-face))
+    ;; Quotes are string face
+    (should (eq (pkl-ts-mode-test-face-at src 5) 'font-lock-string-face))
+    (should (eq (pkl-ts-mode-test-face-at src 25) 'font-lock-string-face))))
+
+(ert-deftest pkl-ts-mode-font-lock-interpolation-custom-delimiters ()
+  "Interpolation in #\"...\"# strings is fontified correctly."
+  ;; x = #"hello \#(name) world"#
+  ;; 1234567890123456789012345678
+  (let* ((src "x = #\"hello \\#(name) world\"#"))
+    ;; #" opening delimiter is string face
+    (should (eq (pkl-ts-mode-test-face-at src 5) 'font-lock-string-face))
+    ;; Literal text is string face
+    (should (eq (pkl-ts-mode-test-face-at src 7) 'font-lock-string-face))
+    ;; \#( should be escape face
+    (should (eq (pkl-ts-mode-test-face-at src 13) 'font-lock-escape-face))
+    ;; "name" should NOT be string face
+    (should (not (eq (pkl-ts-mode-test-face-at src 16) 'font-lock-string-face)))
+    ;; ) should be escape face
+    (should (eq (pkl-ts-mode-test-face-at src 20) 'font-lock-escape-face))
+    ;; "# closing delimiter is string face
+    (should (eq (pkl-ts-mode-test-face-at src 27) 'font-lock-string-face))))
+
+(ert-deftest pkl-ts-mode-font-lock-multiline-interpolation ()
+  "Interpolation in multiline strings is fontified correctly."
+  (let* ((src "x = \"\"\"\nhello \\(name) world\n\"\"\""))
+    ;; \"\"\" opening is string face
+    (should (eq (pkl-ts-mode-test-face-at src 5) 'font-lock-string-face))
+    ;; Literal text is string face
+    (should (eq (pkl-ts-mode-test-face-at src 9) 'font-lock-string-face))
+    ;; \( is escape face
+    (should (eq (pkl-ts-mode-test-face-at src 15) 'font-lock-escape-face))
+    ;; "name" is NOT string face
+    (should (not (eq (pkl-ts-mode-test-face-at src 17) 'font-lock-string-face)))
+    ;; ) is escape face
+    (should (eq (pkl-ts-mode-test-face-at src 21) 'font-lock-escape-face))
+    ;; \"\"\" closing is string face
+    (should (eq (pkl-ts-mode-test-face-at src 29) 'font-lock-string-face))))
 
 (provide 'pkl-ts-mode-tests)
 
