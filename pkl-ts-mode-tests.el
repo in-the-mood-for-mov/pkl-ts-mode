@@ -112,6 +112,22 @@ birds = \"\"\"
   \"\"\"
 "))
 
+(ert-deftest pkl-ts-mode-indent-block-comment ()
+  "Block comment continuation lines are indented correctly."
+  (pkl-ts-mode-test-indent
+   "\
+/*
+* This is a block comment
+* with multiple lines
+*/
+"
+   "\
+/*
+ * This is a block comment
+ * with multiple lines
+ */
+"))
+
 (ert-deftest pkl-ts-mode-indent-if-expression ()
   "If expressions have their consequent and alternatives indented."
   (pkl-ts-mode-test-indent

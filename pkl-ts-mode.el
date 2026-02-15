@@ -134,7 +134,7 @@
      ((parent-is "argumentList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "typeArgumentList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "mlStringLiteralExpr") parent-bol pkl-ts-mode-indent-offset)
-     ((parent-is "blockComment") prev-adaptive-prefix 0)
+     ((parent-is "blockComment") parent-bol 1)
      ((node-is "if") parent-bol 0)
      ((node-is "else") parent-bol 0)
      ((parent-is "ifExpr") parent-bol 2)
