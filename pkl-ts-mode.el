@@ -120,6 +120,28 @@
    '(["(" ")" "[" "]" "{" "}"] @font-lock-bracket-face))
   "Font-lock settings for `pkl-ts-mode'.")
 
+(defun pkl-ts-mode--ancestor-bol (n)
+  "Return an anchor that walks N levels up from PARENT and returns its BOL."
+  (lambda (_node parent &rest _)
+    (dotimes (_ n)
+      (setq parent (treesit-node-parent parent)))
+    (save-excursion
+      (goto-char (treesit-node-start parent))
+      (back-to-indentation)
+      (point))))
+
+(defun pkl-ts-mode--outermost-ancestor-bol (type)
+  "Return an anchor that finds the outermost ancestor of TYPE.
+Walks up the tree while the parent has the same TYPE, then returns
+the beginning-of-line indentation of the outermost match."
+  (lambda (_node parent &rest _)
+    (while (equal (treesit-node-type (treesit-node-parent parent)) type)
+      (setq parent (treesit-node-parent parent)))
+    (save-excursion
+      (goto-char (treesit-node-start parent))
+      (back-to-indentation)
+      (point))))
+
 (defvar pkl-ts-mode--indent-rules
   `((pkl
      ((parent-is "module") column-0 0)
@@ -133,18 +155,26 @@
      ((parent-is "parameterList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "argumentList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "typeArgumentList") parent-bol pkl-ts-mode-indent-offset)
-     ((parent-is "mlStringLiteralExpr") parent-bol pkl-ts-mode-indent-offset)
+     ((parent-is "mlStringLiteralExpr")
+      ,(pkl-ts-mode--ancestor-bol 1) pkl-ts-mode-indent-offset)
+     ((node-is "\\.") parent-bol pkl-ts-mode-indent-offset)
+     ((node-is "\\?\\?")
+      ,(pkl-ts-mode--outermost-ancestor-bol "nullCoalesceExpr")
+      pkl-ts-mode-indent-offset)
      ((parent-is "blockComment") parent-bol 1)
-     ((node-is "if") parent-bol 0)
+     ;; Nested letExpr aligns with the outermost let.
+     ((and (node-is "letExpr") (parent-is "letExpr"))
+      ,(pkl-ts-mode--outermost-ancestor-bol "letExpr") 0)
+     ((parent-is "letExpr") parent-bol pkl-ts-mode-indent-offset)
      ((node-is "else") parent-bol 0)
-     ((parent-is "ifExpr") parent-bol 2)
+     ((parent-is "ifExpr") parent-bol pkl-ts-mode-indent-offset)
      ;; Lines inside a multiline string where node is nil but parent (from
      ;; treesit-node-on) is mlStringLiteralPart. The offset preserves existing
      ;; relative indentation within the string.
      ((lambda (node parent &rest _)
         (and (null node)
              (equal (treesit-node-type parent) "mlStringLiteralPart")))
-      parent-bol
+      ,(pkl-ts-mode--ancestor-bol 2)
       (lambda (_node _parent bol &rest _)
         (+ (symbol-value 'pkl-ts-mode-indent-offset)
            (save-excursion

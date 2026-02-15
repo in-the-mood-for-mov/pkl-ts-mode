@@ -112,6 +112,24 @@ birds = \"\"\"
   \"\"\"
 "))
 
+(ert-deftest pkl-ts-mode-indent-multiline-string-continuation-line ()
+  "Multiline string on continuation line is not double-indented."
+  (pkl-ts-mode-test-indent
+   "\
+message =
+\"\"\"
+Hello,
+  World!
+\"\"\"
+"
+   "\
+message =
+  \"\"\"
+  Hello,
+    World!
+  \"\"\"
+"))
+
 (ert-deftest pkl-ts-mode-indent-block-comment ()
   "Block comment continuation lines are indented correctly."
   (pkl-ts-mode-test-indent
@@ -126,6 +144,56 @@ birds = \"\"\"
  * This is a block comment
  * with multiple lines
  */
+"))
+
+(ert-deftest pkl-ts-mode-indent-chained-method-calls ()
+  "Chained method calls are indented relative to the receiver."
+  (pkl-ts-mode-test-indent
+   "\
+result =
+items
+.filter((x) -> x > 0)
+.map((x) -> x * 2)
+.toList()
+"
+   "\
+result =
+  items
+    .filter((x) -> x > 0)
+    .map((x) -> x * 2)
+    .toList()
+"))
+
+(ert-deftest pkl-ts-mode-indent-let-expression ()
+  "Chained let expressions align and body is indented."
+  (pkl-ts-mode-test-indent
+   "\
+result =
+let (x = 42)
+let (y = x + 1)
+x + y
+"
+   "\
+result =
+  let (x = 42)
+  let (y = x + 1)
+    x + y
+"))
+
+(ert-deftest pkl-ts-mode-indent-null-coalesce-chain ()
+  "Null coalesce operator continuation lines are indented."
+  (pkl-ts-mode-test-indent
+   "\
+value =
+a
+?? b
+?? c
+"
+   "\
+value =
+  a
+    ?? b
+    ?? c
 "))
 
 (ert-deftest pkl-ts-mode-indent-if-expression ()
@@ -144,6 +212,30 @@ birds =
     \"turkey\"
   else
     \"robin\"
+"))
+
+(ert-deftest pkl-ts-mode-indent-nested-if-expression ()
+  "Nested if expressions are indented progressively."
+  (pkl-ts-mode-test-indent
+   "\
+result =
+if (a > 0)
+if (b > 0)
+\"both positive\"
+else
+\"b not positive\"
+else
+\"a not positive\"
+"
+   "\
+result =
+  if (a > 0)
+    if (b > 0)
+      \"both positive\"
+    else
+      \"b not positive\"
+  else
+    \"a not positive\"
 "))
 
 ;;; --- String interpolation syntax ---
