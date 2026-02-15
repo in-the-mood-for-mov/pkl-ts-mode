@@ -128,11 +128,16 @@
      ((node-is "]") parent-bol 0)
      ((parent-is "classBody") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "objectBody") parent-bol pkl-ts-mode-indent-offset)
+     ((parent-is "classProperty") parent-bol pkl-ts-mode-indent-offset)
+     ((parent-is "objectProperty") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "parameterList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "argumentList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "typeArgumentList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "mlStringLiteralExpr") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "blockComment") prev-adaptive-prefix 0)
+     ((node-is "if") parent-bol 0)
+     ((node-is "else") parent-bol 0)
+     ((parent-is "ifExpr") parent-bol 2)
      ;; Lines inside a multiline string where node is nil but parent (from
      ;; treesit-node-on) is mlStringLiteralPart. The offset preserves existing
      ;; relative indentation within the string.

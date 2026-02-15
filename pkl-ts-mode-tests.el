@@ -112,6 +112,24 @@ birds = \"\"\"
   \"\"\"
 "))
 
+(ert-deftest pkl-ts-mode-indent-if-expression ()
+  "If expressions have their consequent and alternatives indented."
+  (pkl-ts-mode-test-indent
+   "\
+birds =
+if (size == \"large\")
+\"turkey\"
+else
+\"robin\"
+"
+   "\
+birds =
+  if (size == \"large\")
+    \"turkey\"
+  else
+    \"robin\"
+"))
+
 ;;; --- String interpolation syntax ---
 
 (defun pkl-ts-mode-test-scan-lists (source pos)
