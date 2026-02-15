@@ -4,7 +4,7 @@
 
 ;; Major mode for editing Pkl configuration files, powered by tree-sitter.
 ;; Install the grammar via M-x treesit-install-language-grammar and selecting pkl.
-
+;;
 ;;; Code:
 
 (require 'treesit)
