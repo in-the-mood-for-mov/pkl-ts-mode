@@ -20,7 +20,6 @@
 (ert-deftest pkl-ts-mode-indent-class-body ()
   "Class body is indented."
   (pkl-ts-mode-test-indent
-   ;; source (intentionally unindented)
    "\
 class Foo {
 bar = 1
@@ -32,7 +31,19 @@ class Foo {
   baz = 2
 }"))
 
-;;; --- Object indentation ---
+(ert-deftest pkl-ts-mode-indent-class-method ()
+  "Class method body is indented."
+  (pkl-ts-mode-test-indent
+   "\
+class Aviary {
+function listBirds(): String =
+birds.join()
+}"
+   "\
+class Aviary {
+  function listBirds(): String =
+    birds.join()
+}"))
 
 (ert-deftest pkl-ts-mode-indent-object-body ()
   "Object body is indented."
@@ -46,6 +57,20 @@ age = 42
 pigeon {
   name = \"Pigeon\"
   age = 42
+}"))
+
+(ert-deftest pkl-ts-mode-indent-object-method ()
+  "Object method body is indented"
+  (pkl-ts-mode-test-indent
+   "\
+pigeon {
+local function greet() =
+\"Hello\\(name)\"
+}"
+   "\
+pigeon {
+  local function greet() =
+    \"Hello\\(name)\"
 }"))
 
 (ert-deftest pkl-ts-mode-indent-nested-objects ()
@@ -237,8 +262,6 @@ result =
   else
     \"a not positive\"
 "))
-
-;;; --- String interpolation syntax ---
 
 (defun pkl-ts-mode-test-scan-lists (source pos)
   "Insert SOURCE, propertize, scan-lists backward/forward from POS.
