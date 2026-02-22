@@ -148,6 +148,10 @@ the beginning-of-line indentation of the outermost match."
      ((node-is "}") parent-bol 0)
      ((node-is ")") parent-bol 0)
      ((node-is "]") parent-bol 0)
+     ;; When a declaration starts with a docComment, the node's start
+     ;; shifts to the /// line. The sibling right after the docComment
+     ;; must align with it, not be indented relative to parent-bol.
+     ((query ((_ :anchor (docComment) :anchor _ @node))) prev-sibling 0)
      ((parent-is "^\\(?:class\\|object\\)\\(?:Body\\|Method\\|Property\\)$")
       parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "parameterList") parent-bol pkl-ts-mode-indent-offset)

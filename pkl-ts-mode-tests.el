@@ -171,6 +171,48 @@ message =
  */
 "))
 
+(ert-deftest pkl-ts-mode-indent-doc-comment-before-class-property ()
+  "Class property after a doc comment is not over-indented."
+  (pkl-ts-mode-test-indent
+   "\
+class Foo {
+/// doc comment for bar
+bar = 1
+}"
+   "\
+class Foo {
+  /// doc comment for bar
+  bar = 1
+}"))
+
+(ert-deftest pkl-ts-mode-indent-doc-comment-before-class-method ()
+  "Class method after a doc comment is not over-indented."
+  (pkl-ts-mode-test-indent
+   "\
+class Aviary {
+/// Lists all birds.
+function listBirds(): String =
+birds.join()
+}"
+   "\
+class Aviary {
+  /// Lists all birds.
+  function listBirds(): String =
+    birds.join()
+}"))
+
+(ert-deftest pkl-ts-mode-indent-doc-comment-module-level ()
+  "Module-level property after a doc comment is not over-indented."
+  (pkl-ts-mode-test-indent
+   "\
+/// Doc comment for result.
+result = 42
+"
+   "\
+/// Doc comment for result.
+result = 42
+"))
+
 (ert-deftest pkl-ts-mode-indent-chained-method-calls ()
   "Chained method calls are indented relative to the receiver."
   (pkl-ts-mode-test-indent
