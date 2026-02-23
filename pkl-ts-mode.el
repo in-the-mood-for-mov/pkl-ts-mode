@@ -130,6 +130,12 @@
       (back-to-indentation)
       (point))))
 
+(defun pkl-ts-mode--grand-parent-bol (_node parent &rest _)
+  (save-excursion
+    (goto-char (treesit-node-start (treesit-node-parent parent)))
+    (back-to-indentation)
+    (point)))
+
 (defun pkl-ts-mode--outermost-ancestor-bol (type)
   "Return an anchor that finds the outermost ancestor of TYPE.
 Walks up the tree while the parent has the same TYPE, then returns
@@ -157,8 +163,6 @@ the beginning-of-line indentation of the outermost match."
      ((parent-is "parameterList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "argumentList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "typeArgumentList") parent-bol pkl-ts-mode-indent-offset)
-     ((parent-is "mlStringLiteralExpr")
-      ,(pkl-ts-mode--ancestor-bol 1) pkl-ts-mode-indent-offset)
      ((node-is "\\.") parent-bol pkl-ts-mode-indent-offset)
      ((node-is "\\?\\?")
       ,(pkl-ts-mode--outermost-ancestor-bol "nullCoalesceExpr")
@@ -170,18 +174,24 @@ the beginning-of-line indentation of the outermost match."
      ((parent-is "letExpr") parent-bol pkl-ts-mode-indent-offset)
      ((node-is "else") parent-bol 0)
      ((parent-is "ifExpr") parent-bol pkl-ts-mode-indent-offset)
-     ;; Lines inside a multiline string where node is nil but parent (from
-     ;; treesit-node-on) is mlStringLiteralPart. The offset preserves existing
-     ;; relative indentation within the string.
-     ((lambda (node parent &rest _)
-        (and (null node)
-             (equal (treesit-node-type parent) "mlStringLiteralPart")))
-      ,(pkl-ts-mode--ancestor-bol 2)
-      (lambda (_node _parent bol &rest _)
-        (+ (symbol-value 'pkl-ts-mode-indent-offset)
-           (save-excursion
-             (goto-char bol)
-             (current-column)))))
+     ((parent-is "mlStringLiteralExpr") parent-bol 0)
+     ;; Lines inside a multiline string are represented as a null node under a
+     ;; mlStringLiteralPart. Anchor to the grandparent (msStringLiteralExpr)
+     ;; whose position is stable during indent-region's batch computation,
+     ;; and preserve the relative offset.
+     ((parent-is "mlStringLiteralPart")
+      grand-parent
+      (lambda (_node parent bol &rest _)
+        (let* ((string-literal-expr-node
+                (treesit-node-start (treesit-node-parent parent)))
+               (base-col (save-excursion
+                           (goto-char string-literal-expr-node)
+                           (back-to-indentation)
+                           (current-column)))
+               (bol-col (save-excursion
+                          (goto-char bol)
+                          (current-column))))
+          (max 0 (- bol-col base-col)))))
      (no-node parent-bol 0)))
   "Tree-sitter indentation rules for Pkl.")
 

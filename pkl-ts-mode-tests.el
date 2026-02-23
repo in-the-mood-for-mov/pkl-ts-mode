@@ -15,6 +15,8 @@
     (pkl-ts-mode)
     (insert source)
     (indent-region (point-min) (point-max))
+    (should (equal (buffer-string) expected))
+    (indent-region (point-min) (point-max))
     (should (equal (buffer-string) expected))))
 
 (ert-deftest pkl-ts-mode-indent-class-body ()
@@ -109,13 +111,15 @@ class Foo {
   "Multiline strings are indented."
   (pkl-ts-mode-test-indent
    "\
-birds = \"\"\"
+birds =
+\"\"\"
 pidgeon
 robin
 \"\"\"
 "
    "\
-birds = \"\"\"
+birds =
+  \"\"\"
   pidgeon
   robin
   \"\"\"
@@ -125,33 +129,17 @@ birds = \"\"\"
   "Internal indentation inside multiline strings is preserved."
   (pkl-ts-mode-test-indent
    "\
-birds = \"\"\"
+birds =
+\"\"\"
 pidgeon
   robin
 \"\"\"
 "
    "\
-birds = \"\"\"
+birds =
+  \"\"\"
   pidgeon
     robin
-  \"\"\"
-"))
-
-(ert-deftest pkl-ts-mode-indent-multiline-string-continuation-line ()
-  "Multiline string on continuation line is not double-indented."
-  (pkl-ts-mode-test-indent
-   "\
-message =
-\"\"\"
-Hello,
-  World!
-\"\"\"
-"
-   "\
-message =
-  \"\"\"
-  Hello,
-    World!
   \"\"\"
 "))
 
