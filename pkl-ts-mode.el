@@ -160,6 +160,7 @@ the beginning-of-line indentation of the outermost match."
      ((query ((_ :anchor (docComment) :anchor _ @node))) prev-sibling 0)
      ((parent-is "^\\(?:class\\|object\\)\\(?:Body\\|Method\\|Property\\)$")
       parent-bol pkl-ts-mode-indent-offset)
+     ((parent-is "typeAlias") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "parameterList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "argumentList") parent-bol pkl-ts-mode-indent-offset)
      ((parent-is "typeArgumentList") parent-bol pkl-ts-mode-indent-offset)

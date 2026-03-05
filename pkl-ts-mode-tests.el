@@ -293,6 +293,18 @@ result =
     \"a not positive\"
 "))
 
+(ert-deftest pkl-ts-mode-indent-typealias-body ()
+  "Typealias body is indented when split across lines."
+  (pkl-ts-mode-test-indent
+   "\
+typealias Duration =
+Int|Float
+"
+   "\
+typealias Duration =
+  Int|Float
+"))
+
 (defun pkl-ts-mode-test-scan-lists (source pos)
   "Insert SOURCE, propertize, scan-lists backward/forward from POS.
 Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
