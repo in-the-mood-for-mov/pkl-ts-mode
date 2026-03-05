@@ -230,6 +230,9 @@ Install it with M-x treesit-install-language-grammar RET pkl RET"))
                 (builtin function property variable annotation escape-sequence interpolation)
                 (operator delimiter bracket)))
 
+  (when (boundp 'evil-shift-width)
+    (setq-local evil-shift-width pkl-ts-mode-indent-offset))
+
   (treesit-major-mode-setup))
 
 (add-to-list 'treesit-language-source-alist pkl-ts-mode--grammar-source)
