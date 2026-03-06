@@ -15,6 +15,8 @@
 
 ;;; Code:
 
+(require 'json)
+
 (defgroup pkl-ts-mode-eglot nil
   "Eglot support for Pkl."
   :group 'pkl
