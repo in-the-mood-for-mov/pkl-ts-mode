@@ -221,6 +221,8 @@ Install it with M-x treesit-install-language-grammar RET pkl RET"))
 
   (setq-local comment-start "// ")
   (setq-local comment-end "")
+  (setq-local adaptive-fill-regexp "[ \t]*///?[ \t]*")
+  (setq-local adaptive-fill-first-line-regexp adaptive-fill-regexp)
 
   (setq-local treesit-simple-indent-rules pkl-ts-mode--indent-rules)
   (setq-local treesit-font-lock-settings pkl-ts-mode--font-lock-settings)

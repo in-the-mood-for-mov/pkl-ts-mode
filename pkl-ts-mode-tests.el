@@ -433,6 +433,32 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
     ;; \"\"\" closing is string face
     (should (eq (pkl-ts-mode-test-face-at src 29) 'font-lock-string-face))))
 
+;;; --- Fill / reflow ---
+
+(defun pkl-ts-mode-test-fill-region (source expected)
+  "Insert SOURCE, fill-region the whole buffer, compare with EXPECTED."
+  (with-temp-buffer
+    (pkl-ts-mode)
+    (insert source)
+    (fill-region (point-min) (point-max))
+    (should (equal (buffer-string) expected))))
+
+(ert-deftest pkl-ts-mode-fill-region-line-comment ()
+  "fill-region reflows a long // comment preserving the prefix."
+  (pkl-ts-mode-test-fill-region
+   "// This is a very long comment that should be wrapped because it exceeds the fill column which is typically set to seventy characters.\n"
+   "// This is a very long comment that should be wrapped because it
+// exceeds the fill column which is typically set to seventy
+// characters.\n"))
+
+(ert-deftest pkl-ts-mode-fill-region-doc-comment ()
+  "fill-region reflows a long /// doc comment preserving the prefix."
+  (pkl-ts-mode-test-fill-region
+   "/// This is a very long doc comment that should be wrapped because it exceeds the fill column which is typically set to seventy characters.\n"
+   "/// This is a very long doc comment that should be wrapped because it
+/// exceeds the fill column which is typically set to seventy
+/// characters.\n"))
+
 (provide 'pkl-ts-mode-tests)
 
 ;;; pkl-ts-mode-tests.el ends here
