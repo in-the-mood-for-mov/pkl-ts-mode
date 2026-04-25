@@ -9,6 +9,29 @@
 (require 'ert)
 (require 'pkl-ts-mode)
 
+(unless (locate-library "evil")
+  (defvar pkl-ts-mode-test-evil-stub t)
+
+  (defmacro evil-define-text-object (name args &rest body)
+    `(defun ,name ,args ,@body))
+
+  (defun evil-define-key (_states keymap &rest bindings)
+    (while bindings
+      (define-key keymap (kbd (pop bindings)) (pop bindings))))
+
+  (defun evil-range (beg end &rest properties)
+    (list beg end properties))
+
+  (defun evil-range-beginning (range)
+    (car range))
+
+  (defun evil-range-end (range)
+    (cadr range))
+
+  (provide 'evil))
+
+(require 'pkl-ts-mode-evil)
+
 (defun pkl-ts-mode-test-indent (source expected)
   "Insert SOURCE into a temp buffer, re-indent, and compare with EXPECTED."
   (with-temp-buffer
@@ -343,6 +366,76 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
     (should (equal (car r2) 13))
     (should (equal (cdr r1) 12))
     (should (equal (cdr r2) 16))))
+
+;;; --- Evil text objects ---
+
+(defun pkl-ts-mode-test-text-object (source point-text text-object)
+  "Return selected text from TEXT-OBJECT in SOURCE at POINT-TEXT."
+  (with-temp-buffer
+    (pkl-ts-mode)
+    (insert source)
+    (goto-char (point-min))
+    (search-forward point-text)
+    (let ((range (funcall text-object nil)))
+      (buffer-substring-no-properties
+       (evil-range-beginning range)
+       (evil-range-end range)))))
+
+(ert-deftest pkl-ts-mode-evil-comment-line-outer ()
+  "Outer comment text object includes contiguous line comment prefixes."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "first = 1\n// one\n// two\nsecond = 2\n"
+     "two"
+     #'pkl-ts-mode-outer-comment)
+    "// one\n// two")))
+
+(ert-deftest pkl-ts-mode-evil-comment-line-inner ()
+  "Inner comment text object leaves one line comment prefix outside."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "first = 1\n// one\n// two\nsecond = 2\n"
+     "two"
+     #'pkl-ts-mode-inner-comment)
+    "one\n// two")))
+
+(ert-deftest pkl-ts-mode-evil-comment-doc-inner ()
+  "Inner comment text object handles doc comment prefixes."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "/// one\n/// two\nresult = 42\n"
+     "two"
+     #'pkl-ts-mode-inner-comment)
+    "one\n/// two")))
+
+(ert-deftest pkl-ts-mode-evil-comment-block-inner ()
+  "Inner comment text object excludes block comment delimiters."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "/* one */\nresult = 42\n"
+     "one"
+     #'pkl-ts-mode-inner-comment)
+    " one ")))
+
+(ert-deftest pkl-ts-mode-evil-text-object-keybindings ()
+  "Evil text object keys use c for comments, k for classes, and t for strings."
+  (skip-unless (bound-and-true-p pkl-ts-mode-test-evil-stub))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "ac"))
+              #'pkl-ts-mode-outer-comment))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "ic"))
+              #'pkl-ts-mode-inner-comment))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "ak"))
+              #'pkl-ts-mode-outer-class))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "ik"))
+              #'pkl-ts-mode-inner-class))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "at"))
+              #'pkl-ts-mode-outer-string))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "it"))
+              #'pkl-ts-mode-inner-string)))
 
 ;;; --- Font-lock: string interpolation ---
 
