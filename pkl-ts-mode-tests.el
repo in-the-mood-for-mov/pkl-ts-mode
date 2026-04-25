@@ -6,8 +6,10 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'ert)
 (require 'pkl-ts-mode)
+(require 'pkl-ts-mode-eglot)
 
 (unless (locate-library "evil")
   (defvar pkl-ts-mode-test-evil-stub t)
@@ -551,6 +553,65 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
    "/// This is a very long doc comment that should be wrapped because it
 /// exceeds the fill column which is typically set to seventy
 /// characters.\n"))
+
+;;; --- Eglot ---
+
+(ert-deftest pkl-ts-mode-eglot-server-contact-builds-java-command ()
+  "pkl-lsp starts with the configured Java command."
+  (cl-letf (((symbol-function 'pkl-ts-mode-eglot--ensure-server)
+             (lambda () "/tmp/pkl-lsp.jar")))
+    (let ((pkl-ts-mode-eglot-java-path "java")
+          (pkl-ts-mode-eglot-java-args '("-Xmx512m")))
+      (should (equal (pkl-ts-mode-eglot--server-contact)
+                     '("java" "-Xmx512m" "-jar" "/tmp/pkl-lsp.jar"))))))
+
+(defun pkl-ts-mode-tests--make-eglot-server ()
+  "Build a `pkl-ts-mode-eglot-server' backed by a throwaway cat process."
+  (make-instance
+   'pkl-ts-mode-eglot-server
+   :name "pkl-test"
+   :notification-dispatcher #'ignore
+   :request-dispatcher #'ignore
+   :process (lambda ()
+              (start-process "pkl-test" nil "cat"))))
+
+(ert-deftest pkl-ts-mode-eglot-configuration-handles-pkl-scope-uri ()
+  "pkl-lsp's documented Pkl scope name does not need to be a URI."
+  (let ((server (pkl-ts-mode-tests--make-eglot-server)))
+    (unwind-protect
+        (cl-letf (((symbol-function 'eglot-uri-to-path)
+                   (lambda (_uri) (error "invalid URI")))
+                  ((symbol-function 'pkl-ts-mode-eglot--pkl-path)
+                   (lambda () "/opt/pkl/bin/pkl")))
+          (should (equal (eglot-handle-request
+                          server 'workspace/configuration
+                          :items '((:scopeUri "Pkl"
+                                     :section "pkl.cli.path")))
+                        ["/opt/pkl/bin/pkl"])))
+      (delete-process (jsonrpc--process server)))))
+
+(ert-deftest pkl-ts-mode-eglot-configuration-delegates-other-scopes ()
+  "Non-Pkl configuration items are delegated and merged by original order."
+  (let ((server (pkl-ts-mode-tests--make-eglot-server)))
+    (unwind-protect
+        ;; `eglot--workspace-configuration-plist' is private to Eglot; if
+        ;; upstream renames it this stub will need to follow.
+        (cl-letf (((symbol-function 'pkl-ts-mode-eglot--pkl-path)
+                   (lambda () "/opt/pkl/bin/pkl"))
+                  ((symbol-function 'eglot--workspace-configuration-plist)
+                   (lambda (_server _path)
+                     '(:other.one "one-value"
+                       :other.two "two-value"))))
+          (should (equal (eglot-handle-request
+                          server 'workspace/configuration
+                          :items '((:scopeUri "file:///tmp/example.pkl"
+                                     :section "other.one")
+                                    (:scopeUri "Pkl"
+                                     :section "pkl.cli.path")
+                                    (:scopeUri "file:///tmp/example.pkl"
+                                     :section "other.two")))
+                         ["one-value" "/opt/pkl/bin/pkl" "two-value"])))
+      (delete-process (jsonrpc--process server)))))
 
 (provide 'pkl-ts-mode-tests)
 

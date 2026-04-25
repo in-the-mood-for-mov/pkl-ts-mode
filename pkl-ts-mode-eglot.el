@@ -15,6 +15,8 @@
 
 ;;; Code:
 
+(require 'cl-generic)
+(require 'eglot)
 (require 'json)
 
 (defgroup pkl-ts-mode-eglot nil
@@ -43,6 +45,20 @@ The symbol `latest' means the most recent GitHub release."
   "Extra arguments passed to the JVM when starting pkl-lsp."
   :type '(repeat string)
   :group 'pkl-ts-mode-eglot)
+
+(defcustom pkl-ts-mode-eglot-pkl-path nil
+  "Path to the Pkl CLI executable.
+When nil, `pkl-ts-mode-eglot' looks for pkl in `exec-path'."
+  :type '(choice (const :tag "Auto-detect" nil) file)
+  :group 'pkl-ts-mode-eglot)
+
+(defclass pkl-ts-mode-eglot-server (eglot-lsp-server) ()
+  :documentation "Eglot server class for pkl-lsp.")
+
+(defconst pkl-ts-mode-eglot--scope-uri "Pkl"
+  "Scope identifier pkl-lsp sends in workspace/configuration requests.
+The pkl-lsp server uses the bare string \"Pkl\" rather than a real URI,
+so requests with this scope must bypass `eglot-uri-to-path'.")
 
 (defun pkl-ts-mode-eglot--jar-path ()
   "Return the full path to the pkl-lsp JAR."
@@ -81,7 +97,36 @@ The symbol `latest' means the most recent GitHub release."
         (message "Downloaded pkl-lsp %s." version)))
     jar))
 
-(defun pkl-ts-mode-eglot--server-contact (_interactive)
+(defun pkl-ts-mode-eglot--pkl-path ()
+  "Return the configured or detected Pkl CLI path."
+  (or pkl-ts-mode-eglot-pkl-path
+      (executable-find "pkl")))
+
+(defun pkl-ts-mode-eglot--configuration-value (item)
+  "Return pkl-lsp configuration value for ITEM."
+  (pcase (plist-get item :section)
+    ("pkl.cli.path" (pkl-ts-mode-eglot--pkl-path))
+    (_ nil)))
+
+(cl-defmethod eglot-handle-request
+  ((server pkl-ts-mode-eglot-server)
+   (_method (eql workspace/configuration))
+   &key items)
+  "Handle Pkl-scoped config items and delegate the rest to Eglot."
+  (apply #'vector
+         (mapcar
+          (lambda (item)
+            (if (equal (plist-get item :scopeUri) pkl-ts-mode-eglot--scope-uri)
+                (pkl-ts-mode-eglot--configuration-value item)
+              ; We can invoke cl-call-next-method multiple times, but the is not
+              ; a problem because there are few items in practice.
+              (aref (cl-call-next-method
+                     server 'workspace/configuration
+                     :items (list item))
+                    0)))
+          items)))
+
+(defun pkl-ts-mode-eglot--server-contact (&optional _interactive)
   "Eglot contact function for pkl-lsp.
 Downloads the server JAR if needed, then returns the command to start it."
   (let ((jar (pkl-ts-mode-eglot--ensure-server)))
@@ -104,9 +149,9 @@ Downloads the server JAR if needed, then returns the command to start it."
 ;;;###autoload
 (defun pkl-ts-mode-eglot-init ()
   "Register pkl-lsp as the Eglot server for `pkl-ts-mode'."
-  (require 'eglot)
   (add-to-list 'eglot-server-programs
-               '(pkl-ts-mode . pkl-ts-mode-eglot--server-contact)))
+               '(pkl-ts-mode pkl-ts-mode-eglot-server
+                             . pkl-ts-mode-eglot--server-contact)))
 
 (provide 'pkl-ts-mode-eglot)
 ;;; pkl-ts-mode-eglot.el ends here
