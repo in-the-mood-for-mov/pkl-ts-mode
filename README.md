@@ -26,3 +26,19 @@ Here is a basic `use-package` invocation for this package.
 ```
 
 You can then install the Pkl grammar with `M-x treesit-install-language-grammar`.
+
+## Evil text objects
+
+When [`evil`](https://github.com/emacs-evil/evil) is installed, `pkl-ts-mode`
+binds the following text objects in visual and operator-pending state:
+
+| Key  | Object   | Outer (`a`) selects     | Inner (`i`) selects             |
+|------|----------|-------------------------|---------------------------------|
+| `k`  | class    | the whole class         | the class body without braces   |
+| `c`  | comment  | the comment run         | the comment text without markers|
+| `e`  | object   | the whole object body   | the body without braces         |
+| `f`  | method   | the whole method        | the method body without braces  |
+| `t`  | string   | the string with quotes  | the string contents             |
+
+For example, `dak` deletes the surrounding class and `vie` selects inside
+the current object body.
