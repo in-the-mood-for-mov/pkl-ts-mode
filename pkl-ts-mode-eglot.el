@@ -118,8 +118,8 @@ so requests with this scope must bypass `eglot-uri-to-path'.")
           (lambda (item)
             (if (equal (plist-get item :scopeUri) pkl-ts-mode-eglot--scope-uri)
                 (pkl-ts-mode-eglot--configuration-value item)
-              ; We can invoke cl-call-next-method multiple times, but the is not
-              ; a problem because there are few items in practice.
+              ;; We can invoke cl-call-next-method multiple times, but this is
+              ;; not a problem because there are few items in practice.
               (aref (cl-call-next-method
                      server 'workspace/configuration
                      :items (list item))
