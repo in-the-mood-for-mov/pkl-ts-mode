@@ -28,7 +28,33 @@ Here is a basic `use-package` invocation for this package.
   (add-hook 'pkl-ts-mode-hook #'eglot-ensure))
 ```
 
-You can then install the Pkl grammar with `M-x treesit-install-language-grammar`.
+You also need the Pkl tree-sitter grammar; see [Tree-sitter
+grammar](#tree-sitter-grammar) below.
+
+## Tree-sitter grammar
+
+`pkl-ts-mode` is powered by tree-sitter and needs the Pkl grammar compiled and
+installed. Loading the package registers Pkl in `treesit-language-source-alist`,
+so once it is loaded you can install the grammar with:
+
+```
+M-x treesit-install-language-grammar RET pkl RET
+```
+
+The source URL is pre-filled from the registered source, so you can accept the
+remaining prompts. Installation compiles the grammar from
+[`tree-sitter-pkl`](https://github.com/apple/tree-sitter-pkl), which needs `git`
+and a C compiler on your `PATH`.
+
+### When the grammar is missing
+
+If the grammar is missing when you open a Pkl file, the mode stops with:
+
+> Tree-sitter grammar for Pkl is not installed.
+> Install it with M-x treesit-install-language-grammar RET pkl RET
+
+After installing the grammar, you can simply `M-x revert-buffer` to reload the
+major mode without restarting Emacs.
 
 ## Language server (Eglot)
 
