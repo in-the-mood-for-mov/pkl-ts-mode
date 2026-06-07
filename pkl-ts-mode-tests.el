@@ -661,6 +661,70 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
                          ["one-value" "/opt/pkl/bin/pkl" "two-value"])))
       (delete-process (jsonrpc--process server)))))
 
+;;; --- Imenu ---
+
+(defun pkl-ts-mode-tests--imenu (source)
+  "Return the Imenu index alist for SOURCE in `pkl-ts-mode'."
+  (with-temp-buffer
+    (pkl-ts-mode)
+    (insert source)
+    (funcall imenu-create-index-function)))
+
+(defconst pkl-ts-mode-tests--imenu-source
+  "class Server {
+  port: Int = 8080
+  function url(): String = \"x\"
+}
+
+typealias Id = Int
+
+name = \"app\"
+
+function greet(x: String): String = x
+
+server {
+  host = \"localhost\"
+}
+")
+
+(defun pkl-ts-mode-tests--imenu-names (entries)
+  "Collect entry names from imenu ENTRIES, recursing into submenus.
+The treesit \" \" self-markers (see `treesit--simple-imenu-1') are skipped."
+  (let (names)
+    (dolist (entry entries)
+      (unless (equal (car entry) " ")
+        (push (car entry) names))
+      (unless (markerp (cdr entry))      ; a submenu, not a leaf marker
+        (setq names (nconc (pkl-ts-mode-tests--imenu-names (cdr entry))
+                           names))))
+    names))
+
+(ert-deftest pkl-ts-mode-imenu-categories ()
+  "Imenu groups Pkl symbols by category and finds the right names.
+Object members nested in a property (host under server) are included."
+  (let* ((index (pkl-ts-mode-tests--imenu pkl-ts-mode-tests--imenu-source))
+         (names (lambda (cat)
+                  (sort (pkl-ts-mode-tests--imenu-names (cdr (assoc cat index)))
+                        #'string<))))
+    (should (equal (funcall names "Class") '("Server")))
+    (should (equal (funcall names "Type") '("Id")))
+    (should (equal (funcall names "Method") '("greet" "url")))
+    (should (equal (funcall names "Property")
+                   '("host" "name" "port" "server")))))
+
+(ert-deftest pkl-ts-mode-imenu-positions ()
+  "Imenu entries point at the start of the corresponding definition."
+  ;; Build and query the index in the same live buffer; the markers are
+  ;; buffer-local and would dangle if the buffer were killed first.
+  (with-temp-buffer
+    (pkl-ts-mode)
+    (insert pkl-ts-mode-tests--imenu-source)
+    (let ((index (funcall imenu-create-index-function)))
+      (goto-char (cdr (assoc "Server" (cdr (assoc "Class" index)))))
+      (should (looking-at-p "class Server"))
+      (goto-char (cdr (assoc "greet" (cdr (assoc "Method" index)))))
+      (should (looking-at-p "function greet")))))
+
 ;;; --- auto-mode-alist ---
 
 (defun pkl-ts-mode-tests--auto-mode (file)

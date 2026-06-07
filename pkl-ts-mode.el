@@ -221,6 +221,24 @@ the beginning-of-line indentation of the outermost match."
   :type 'integer
   :group 'pkl)
 
+(defun pkl-ts-mode--first-child-of-type (node type)
+  "Return NODE's first direct child whose type is TYPE, or nil."
+  (car (treesit-filter-child
+        node (lambda (child) (equal (treesit-node-type child) type)))))
+
+(defun pkl-ts-mode--imenu-name (node)
+  "Return the declared name of NODE for an Imenu entry, or nil.
+For methods the name lives inside the method header; otherwise it is the
+node's first direct identifier child."
+  (let* ((type (treesit-node-type node))
+         (name-node
+          (if (member type '("classMethod" "objectMethod"))
+              (when-let ((header (pkl-ts-mode--first-child-of-type
+                                  node "methodHeader")))
+                (pkl-ts-mode--first-child-of-type header "identifier"))
+            (pkl-ts-mode--first-child-of-type node "identifier"))))
+    (and name-node (treesit-node-text name-node t))))
+
 ;;;###autoload
 (define-derived-mode pkl-ts-mode prog-mode "Pkl"
   "Major mode for editing Pkl files, powered by tree-sitter."
@@ -242,6 +260,14 @@ Install it with M-x treesit-install-language-grammar RET pkl RET"))
                 (keyword type constant number)
                 (builtin function property variable annotation escape-sequence interpolation)
                 (operator delimiter bracket)))
+
+  (setq-local treesit-simple-imenu-settings
+              '(("Class" "\\`clazz\\'" nil pkl-ts-mode--imenu-name)
+                ("Type" "\\`typeAlias\\'" nil pkl-ts-mode--imenu-name)
+                ("Method" "\\`\\(?:class\\|object\\)Method\\'" nil
+                 pkl-ts-mode--imenu-name)
+                ("Property" "\\`\\(?:class\\|object\\)Property\\'" nil
+                 pkl-ts-mode--imenu-name)))
 
   (when (boundp 'evil-shift-width)
     (setq-local evil-shift-width pkl-ts-mode-indent-offset))
