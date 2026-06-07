@@ -2,6 +2,13 @@
 
 ;; Copyright (C) 2025-2026 Simon Génier
 
+;; Author: Simon Génier <simon.genier@protonmail.com>
+;; Assisted-by: Claude:claude-opus-4-8
+;; Maintainer: Simon Génier <simon.genier@protonmail.com>
+;; Keywords: languages
+;; URL: https://github.com/in-the-mood-for-mov/pkl-ts-mode
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
 ;;; Commentary:
 
 ;; Eglot integration for the Pkl language server (pkl-lsp).

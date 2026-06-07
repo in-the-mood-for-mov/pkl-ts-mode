@@ -1,5 +1,14 @@
 ;;; pkl-ts-mode-evil.el --- Evil text objects for Pkl -*- lexical-binding: t -*-
 
+;; Copyright (C) 2025-2026 Simon Génier
+
+;; Author: Simon Génier <simon.genier@protonmail.com>
+;; Assisted-by: Claude:claude-opus-4-8
+;; Maintainer: Simon Génier <simon.genier@protonmail.com>
+;; Keywords: languages
+;; URL: https://github.com/in-the-mood-for-mov/pkl-ts-mode
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
 ;;; Commentary:
 
 ;; Evil integration for pkl-ts-mode.  Provides tree-sitter powered text

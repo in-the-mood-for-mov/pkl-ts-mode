@@ -1,5 +1,16 @@
 ;;; pkl-ts-mode.el --- Tree-sitter support for Pkl -*- lexical-binding: t -*-
 
+;; Copyright (C) 2025-2026 Simon Génier
+
+;; Author: Simon Génier <simon.genier@protonmail.com>
+;; Assisted-by: Claude:claude-opus-4-8
+;; Maintainer: Simon Génier <simon.genier@protonmail.com>
+;; Version: 0.4.0
+;; Package-Requires: ((emacs "29.1"))
+;; Keywords: languages
+;; URL: https://github.com/in-the-mood-for-mov/pkl-ts-mode
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
 ;;; Commentary:
 
 ;; Major mode for editing Pkl configuration files, powered by tree-sitter.
