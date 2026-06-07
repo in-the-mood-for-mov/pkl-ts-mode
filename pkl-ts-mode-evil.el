@@ -99,6 +99,53 @@ When INNER is non-nil, leave the first comment delimiter outside the range."
         (pkl-ts-mode--line-comment-range node inner)
       (pkl-ts-mode--block-comment-range node inner))))
 
+(defun pkl-ts-mode--comment-separator-line-p ()
+  "Return non-nil when the current line is blank or an empty comment line.
+Empty comment lines (just \"//\" or \"///\") separate paragraphs within a
+comment run, the same way blank lines separate ordinary paragraphs."
+  (save-excursion
+    (beginning-of-line)
+    (looking-at-p "[ \t]*\\(///?[ \t]*\\)?$")))
+
+(defun pkl-ts-mode--comment-paragraph-range (outer)
+  "Return an evil range for the comment paragraph surrounding point.
+The range is clamped to the comment run, so it never escapes into adjacent
+code, and empty comment lines or blank lines split it into paragraphs.  When
+OUTER is non-nil, trailing separator lines within the comment are included.
+Return nil when point is not inside a comment."
+  (when-let ((comment (pkl-ts-mode--comment-range nil)))
+    (let ((cbeg (evil-range-beginning comment))
+          (cend (evil-range-end comment))
+          beg end)
+      (save-excursion
+        ;; Expand upward over contiguous content lines.
+        (back-to-indentation)
+        (setq beg (max (point) cbeg))
+        (while (and (> (line-beginning-position) cbeg)
+                    (zerop (forward-line -1))
+                    (progn (back-to-indentation) (>= (point) cbeg))
+                    (not (pkl-ts-mode--comment-separator-line-p)))
+          (setq beg (point)))
+        ;; Expand downward over contiguous content lines.
+        (goto-char beg)
+        (end-of-line)
+        (setq end (min (point) cend))
+        (while (and (< (point) cend)
+                    (zerop (forward-line 1))
+                    (< (point) cend)
+                    (not (pkl-ts-mode--comment-separator-line-p)))
+          (end-of-line)
+          (setq end (min (point) cend)))
+        ;; OUTER also swallows the following separator line(s).
+        (when outer
+          (while (and (< (point) cend)
+                      (pkl-ts-mode--comment-separator-line-p))
+            (end-of-line)
+            (setq end (min (point) cend))
+            (unless (zerop (forward-line 1))
+              (goto-char cend))))
+        (evil-range beg end)))))
+
 (evil-define-text-object pkl-ts-mode-outer-class (count &optional _beg _end _type)
   "Select around a class."
   (pkl-ts-mode--text-object-range '((clazz) @cap)))
@@ -146,6 +193,18 @@ When INNER is non-nil, leave the first comment delimiter outside the range."
      (if (equal (treesit-node-type node) "mlStringLiteralExpr") 3 1)
      (evil-range (treesit-node-start node) (treesit-node-end node)))))
 
+(evil-define-text-object pkl-ts-mode-inner-paragraph (count &optional beg end type)
+  "Inner paragraph, clamped to the surrounding comment when point is in one.
+Outside comments this behaves like the stock `evil-inner-paragraph'."
+  (or (pkl-ts-mode--comment-paragraph-range nil)
+      (evil-select-inner-object 'evil-paragraph beg end type count)))
+
+(evil-define-text-object pkl-ts-mode-outer-paragraph (count &optional beg end type)
+  "A paragraph, clamped to the surrounding comment when point is in one.
+Outside comments this behaves like the stock `evil-a-paragraph'."
+  (or (pkl-ts-mode--comment-paragraph-range t)
+      (evil-select-an-object 'evil-paragraph beg end type count t)))
+
 (evil-define-key '(visual operator) pkl-ts-mode-map
   "ak" #'pkl-ts-mode-outer-class
   "ik" #'pkl-ts-mode-inner-class
@@ -155,6 +214,8 @@ When INNER is non-nil, leave the first comment delimiter outside the range."
   "ie" #'pkl-ts-mode-inner-object
   "af" #'pkl-ts-mode-outer-method
   "if" #'pkl-ts-mode-inner-method
+  "ap" #'pkl-ts-mode-outer-paragraph
+  "ip" #'pkl-ts-mode-inner-paragraph
   "at" #'pkl-ts-mode-outer-string
   "it" #'pkl-ts-mode-inner-string)
 

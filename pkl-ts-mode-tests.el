@@ -423,6 +423,50 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
      #'pkl-ts-mode-inner-comment)
     " one ")))
 
+(ert-deftest pkl-ts-mode-evil-comment-paragraph-clamps-to-code ()
+  "Inner paragraph stays within the comment when code follows immediately."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "// one two three\nfoo = 1\n"
+     "two"
+     #'pkl-ts-mode-inner-paragraph)
+    "// one two three")))
+
+(ert-deftest pkl-ts-mode-evil-comment-paragraph-splits-on-empty-comment ()
+  "Empty comment lines separate paragraphs within a comment run."
+  (let ((source "// p1 a\n// p1 b\n//\n// p2 a\nresult = 1\n"))
+    (should
+     (equal
+      (pkl-ts-mode-test-text-object source "p2 a"
+                                    #'pkl-ts-mode-inner-paragraph)
+      "// p2 a"))
+    (should
+     (equal
+      (pkl-ts-mode-test-text-object source "p1 b"
+                                    #'pkl-ts-mode-inner-paragraph)
+      "// p1 a\n// p1 b"))))
+
+(ert-deftest pkl-ts-mode-evil-comment-paragraph-outer-includes-separator ()
+  "Outer paragraph swallows the trailing empty comment line."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "// p1 a\n//\n// p2 a\nx = 1\n"
+     "p1 a"
+     #'pkl-ts-mode-outer-paragraph)
+    "// p1 a\n//")))
+
+(ert-deftest pkl-ts-mode-evil-comment-paragraph-block-splits-on-blank ()
+  "Block comment paragraphs split on blank lines and stay in the block."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "/* a\n   b\n\n   c */\nx = 1\n"
+     "a"
+     #'pkl-ts-mode-inner-paragraph)
+    "/* a\n   b")))
+
 (ert-deftest pkl-ts-mode-evil-text-object-keybindings ()
   "Evil text object keys use c for comments, k for classes, and t for strings."
   (skip-unless (bound-and-true-p pkl-ts-mode-test-evil-stub))
@@ -430,6 +474,10 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
               #'pkl-ts-mode-outer-comment))
   (should (eq (lookup-key pkl-ts-mode-map (kbd "ic"))
               #'pkl-ts-mode-inner-comment))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "ap"))
+              #'pkl-ts-mode-outer-paragraph))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "ip"))
+              #'pkl-ts-mode-inner-paragraph))
   (should (eq (lookup-key pkl-ts-mode-map (kbd "ak"))
               #'pkl-ts-mode-outer-class))
   (should (eq (lookup-key pkl-ts-mode-map (kbd "ik"))
