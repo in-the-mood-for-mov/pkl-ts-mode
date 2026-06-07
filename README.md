@@ -6,6 +6,7 @@ This package adds support for the [Pkl language](https://github.com/apple/pkl) t
 * indent rules, with electric reindentation of closing `}`, `]`, and `)` as you type them
 * font locking through [`treesit`](https://www.gnu.org/software/emacs/manual/html_node/elisp/Parsing-Program-Source.html)
 * symbol navigation through [`imenu`](https://www.gnu.org/software/emacs/manual/html_node/emacs/Imenu.html) (classes, type aliases, methods, properties)
+* structural navigation over major declarations (`beginning-of-defun` and friends)
 * language service through [`eglot`](https://www.gnu.org/software/emacs/manual/html_mono/eglot.html)
 
 ## Requisites
@@ -99,6 +100,23 @@ force an upgrade.
   `*EGLOT … stderr*` buffer.
 * **Re-download the server.** Delete `pkl-ts-mode-eglot-install-dir` or run
   `M-x pkl-ts-mode-eglot-install-server` to fetch a fresh JAR.
+
+## Structural navigation
+
+`pkl-ts-mode` teaches Emacs' standard "defun" commands to move by Pkl's major
+declarations — classes, type aliases, methods, and object-valued properties.
+Scalar assignments (`name = "app"`) are skipped, so navigation jumps between the
+structural landmarks rather than every line.
+
+| Key | Command | Effect |
+|-----|---------|--------|
+| `C-M-a` | `beginning-of-defun` | jump to the start of the current/previous declaration |
+| `C-M-e` | `end-of-defun` | jump past the end of the current declaration |
+| `C-M-h` | `mark-defun` | select the whole declaration |
+| `C-x n d` | `narrow-to-defun` | narrow to the current declaration |
+
+`which-function-mode` also reports the enclosing declaration (e.g.
+`Server.url`), as do `add-log` commands.
 
 ## Evil text objects
 

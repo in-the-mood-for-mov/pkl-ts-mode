@@ -406,6 +406,84 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
     (should (equal (cdr r1) 12))
     (should (equal (cdr r2) 16))))
 
+;;; --- Structural navigation (defun) ---
+
+(defun pkl-ts-mode-tests--defun-line ()
+  "Return the current line trimmed of leading indentation."
+  (string-trim-left
+   (buffer-substring-no-properties (line-beginning-position)
+                                   (line-end-position))))
+
+(defmacro pkl-ts-mode-tests--with-buffer (source &rest body)
+  "Insert SOURCE into a `pkl-ts-mode' buffer and run BODY there."
+  (declare (indent 1))
+  `(with-temp-buffer
+     (pkl-ts-mode)
+     (insert ,source)
+     (goto-char (point-min))
+     ,@body))
+
+(ert-deftest pkl-ts-mode-navigate-defun-class ()
+  "`beginning-of-defun' steps backward over class declarations."
+  (pkl-ts-mode-tests--with-buffer
+      "class Foo {\n  bar = 1\n}\n\nclass Baz {\n  qux = 2\n}\n"
+    (search-forward "qux")
+    (beginning-of-defun)
+    (should (string-prefix-p "class Baz" (pkl-ts-mode-tests--defun-line)))
+    (beginning-of-defun)
+    (should (string-prefix-p "class Foo" (pkl-ts-mode-tests--defun-line)))))
+
+(ert-deftest pkl-ts-mode-navigate-defun-method ()
+  "`beginning-of-defun' lands on the enclosing method, not its body."
+  (pkl-ts-mode-tests--with-buffer
+      "class Aviary {\n  function listBirds(): String = birds.join()\n}\n"
+    (search-forward "birds.join")
+    (beginning-of-defun)
+    (should (string-prefix-p "function listBirds"
+                             (pkl-ts-mode-tests--defun-line)))))
+
+(ert-deftest pkl-ts-mode-navigate-defun-object ()
+  "An object-valued property is a defun; its scalar members are not."
+  (pkl-ts-mode-tests--with-buffer
+      "server {\n  host = \"localhost\"\n}\n"
+    (search-forward "host")
+    (beginning-of-defun)
+    (should (string-prefix-p "server {" (pkl-ts-mode-tests--defun-line)))))
+
+(ert-deftest pkl-ts-mode-navigate-defun-typealias ()
+  "`beginning-of-defun' moves to a type alias declaration."
+  (pkl-ts-mode-tests--with-buffer
+      "name = \"app\"\n\ntypealias Id = Int\n\nresult = 1\n"
+    (search-forward "Id =")
+    (beginning-of-defun)
+    (should (string-prefix-p "typealias Id" (pkl-ts-mode-tests--defun-line)))))
+
+(ert-deftest pkl-ts-mode-navigate-defun-skips-scalar-property ()
+  "Scalar properties are not defuns, so navigation steps past them."
+  (pkl-ts-mode-tests--with-buffer
+      "class Foo {\n  bar = 1\n}\n\nname = \"app\"\n"
+    ;; From the scalar module-level property, the nearest defun backward is
+    ;; the class, not the property itself.
+    (search-forward "\"app\"")
+    (beginning-of-defun)
+    (should (string-prefix-p "class Foo" (pkl-ts-mode-tests--defun-line)))))
+
+(ert-deftest pkl-ts-mode-navigate-end-of-defun ()
+  "`end-of-defun' moves past the end of the current declaration."
+  (pkl-ts-mode-tests--with-buffer
+      "class Foo {\n  bar = 1\n}\n\nclass Baz {\n  qux = 2\n}\n"
+    (search-forward "bar")
+    (end-of-defun)
+    ;; Point is now beyond Foo's closing brace, at or before Baz.
+    (should (looking-at-p "[ \t\n]*class Baz"))))
+
+(ert-deftest pkl-ts-mode-defun-name-qualified ()
+  "`treesit-add-log-current-defun' reports the nested declaration path."
+  (pkl-ts-mode-tests--with-buffer
+      "class Server {\n  function url(): String = render(path)\n}\n"
+    (search-forward "render")
+    (should (equal (treesit-add-log-current-defun) "Server.url"))))
+
 ;;; --- Evil text objects ---
 
 (defun pkl-ts-mode-test-text-object (source point-text text-object)

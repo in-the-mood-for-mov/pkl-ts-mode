@@ -239,6 +239,16 @@ node's first direct identifier child."
             (pkl-ts-mode--first-child-of-type node "identifier"))))
     (and name-node (treesit-node-text name-node t))))
 
+(defun pkl-ts-mode--defun-p (node)
+  "Return non-nil when NODE is a navigable Pkl definition.
+Classes, type aliases, and methods always qualify. A property qualifies
+only when its value is an object body, so `beginning-of-defun' and friends
+step between major declarations — classes, methods, and objects — rather
+than every scalar assignment."
+  (if (member (treesit-node-type node) '("classProperty" "objectProperty"))
+      (and (pkl-ts-mode--first-child-of-type node "objectBody") t)
+    t))
+
 ;;;###autoload
 (define-derived-mode pkl-ts-mode prog-mode "Pkl"
   "Major mode for editing Pkl files, powered by tree-sitter."
@@ -275,6 +285,18 @@ Install it with M-x treesit-install-language-grammar RET pkl RET"))
   ;; untouched.
   (setq-local electric-indent-chars
               (append "}])" electric-indent-chars))
+
+  ;; Structural navigation: let `beginning-of-defun', `end-of-defun',
+  ;; `mark-defun', `narrow-to-defun', and `which-function-mode' move over and
+  ;; report Pkl's major declarations — classes, type aliases, methods, and
+  ;; object-valued properties (see `pkl-ts-mode--defun-p').
+  (setq-local treesit-defun-type-regexp
+              (cons (rx bos
+                        (or "clazz" "typeAlias" "classMethod" "objectMethod"
+                            "classProperty" "objectProperty")
+                        eos)
+                    #'pkl-ts-mode--defun-p))
+  (setq-local treesit-defun-name-function #'pkl-ts-mode--imenu-name)
 
   (when (boundp 'evil-shift-width)
     (setq-local evil-shift-width pkl-ts-mode-indent-offset))
