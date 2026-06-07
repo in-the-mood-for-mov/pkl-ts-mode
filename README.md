@@ -29,6 +29,50 @@ Here is a basic `use-package` invocation for this package.
 
 You can then install the Pkl grammar with `M-x treesit-install-language-grammar`.
 
+## Language server (Eglot)
+
+`pkl-ts-mode` talks to Apple's [`pkl-lsp`](https://github.com/apple/pkl-lsp)
+language server through
+[Eglot](https://www.gnu.org/software/emacs/manual/html_mono/eglot.html).
+
+Call `pkl-ts-mode-eglot-init` once (see the Quickstart) to register `pkl-lsp`
+as the Eglot server for `pkl-ts-mode`. The server JAR is **downloaded
+automatically** from the `pkl-lsp` GitHub releases the first time Eglot starts
+and is cached under `pkl-ts-mode-eglot-install-dir`. Running it requires
+**Java 22+** on your machine.
+
+### Customization
+
+All options live in the `pkl-ts-mode-eglot` group (`M-x customize-group RET
+pkl-ts-mode-eglot`).
+
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `pkl-ts-mode-eglot-server-version` | `latest` | pkl-lsp release to download. `latest` resolves the newest GitHub release; otherwise set a string matching a release tag. |
+| `pkl-ts-mode-eglot-install-dir` | `~/.emacs.d/pkl-lsp` | Directory where `pkl-lsp.jar` is stored. |
+| `pkl-ts-mode-eglot-java-path` | `"java"` | Java executable used to run the server. |
+| `pkl-ts-mode-eglot-java-args` | `nil` | Extra JVM arguments, e.g. `'("-Xmx512m")`. |
+| `pkl-ts-mode-eglot-pkl-path` | `nil` | Path to the Pkl CLI. When `nil`, `pkl` is looked up on `exec-path`. |
+
+`M-x pkl-ts-mode-eglot-install-server` (re)downloads the JAR, replacing any
+existing copy — handy after changing `pkl-ts-mode-eglot-server-version` or to
+force an upgrade.
+
+### Troubleshooting
+
+* **`pkl` not found.** `pkl-lsp` asks Emacs for the Pkl CLI path, and by default
+  the package answers with the first `pkl` on `exec-path`. In GUI Emacs
+  `exec-path` often differs from your shell `PATH`, so either install
+  [`exec-path-from-shell`](https://github.com/purcell/exec-path-from-shell) or
+  set `pkl-ts-mode-eglot-pkl-path` to the absolute path of `pkl`.
+* **Wrong or missing Java.** Point `pkl-ts-mode-eglot-java-path` at a Java 22+
+  executable.
+* **Inspect LSP traffic.** `M-x eglot-events-buffer` shows the requests and
+  responses between Emacs and `pkl-lsp`; the server's own stderr lands in the
+  `*EGLOT … stderr*` buffer.
+* **Re-download the server.** Delete `pkl-ts-mode-eglot-install-dir` or run
+  `M-x pkl-ts-mode-eglot-install-server` to fetch a fresh JAR.
+
 ## Evil text objects
 
 When [`evil`](https://github.com/emacs-evil/evil) is installed, `pkl-ts-mode`
@@ -45,6 +89,12 @@ binds the following text objects in visual and operator-pending state:
 
 For example, `dak` deletes the surrounding class and `vie` selects inside
 the current object body.
+
+The paragraph object (`p`) is comment-aware: inside a comment it selects the
+paragraph clamped to the comment — empty comment lines and blank lines act as
+separators — so `gqip` reflows comment prose without spilling into the
+surrounding code. Outside comments it behaves like Evil's stock paragraph
+object.
 
 ## Development
 
@@ -68,6 +118,3 @@ CI (see `.github/workflows/ci.yml`) runs on every push and pull request across
 Emacs 29 and 30. Each run byte-compiles the package with warnings treated as
 errors and runs the suite twice — once without Evil (the stub path) and once
 with Evil installed, which also byte-compiles the optional integration.
-
-The paragraph object (`p`) is comment-aware: inside a comment it selects the
-paragraph within the comments.
