@@ -61,19 +61,15 @@ make test
 Byte-compile with warnings treated as errors (what CI checks):
 
 ```bash
-# Core files (no Evil needed)
-emacs -Q --batch -L . --eval "(setq byte-compile-error-on-warn t)" \
-  -f batch-byte-compile pkl-ts-mode.el pkl-ts-mode-eglot.el
-
-# Evil integration (requires Evil on the load path)
-emacs -Q --batch --eval "(package-initialize)" -L . \
-  --eval "(setq byte-compile-error-on-warn t)" \
-  -f batch-byte-compile pkl-ts-mode-evil.el
+make compile       # core files, no Evil needed
+make compile-evil  # optional Evil integration, requires Evil on the load path
 ```
 
-Evil is optional. When it is not installed, the test suite uses a stub
-(`pkl-ts-mode-tests.el`), so the core tests still run. CI exercises both the
-stub path and a real-Evil path; see `.github/workflows/ci.yml`.
+Evil is an optional dependency of the package but a hard dependency of
+`pkl-ts-mode-evil.el` (it uses Evil's macros). The core files compile without
+Evil; only `compile-evil`/`test-evil` need it. When Evil is not installed, the
+test suite uses a stub, so the core tests still run. CI exercises both the stub
+path and a real-Evil path; see `.github/workflows/ci.yml`.
 
 ## Architecture Overview
 

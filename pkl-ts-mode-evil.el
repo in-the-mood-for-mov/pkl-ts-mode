@@ -5,8 +5,13 @@
 ;; Evil integration for pkl-ts-mode.  Provides tree-sitter powered text
 ;; objects for classes, comments, objects, methods, and strings.
 ;;
-;; This file is loaded automatically when evil is available.
-;; Do not require it directly.
+;; Evil is a hard dependency of THIS file -- it uses Evil's macros
+;; (`evil-define-text-object', `evil-define-key'), so byte-compiling it
+;; requires Evil on the load path (see the `compile-evil' Makefile target).
+;; Evil is only an *optional* dependency of the package as a whole: the core
+;; files neither require nor compile against Evil, and pkl-ts-mode.el loads
+;; this file lazily via `with-eval-after-load'.  As a result it is loaded
+;; automatically when Evil is available; do not require it directly.
 
 ;;; Code:
 

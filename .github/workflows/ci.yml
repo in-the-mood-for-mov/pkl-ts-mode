@@ -40,10 +40,7 @@ jobs:
         run: make test
 
       - name: Byte-compile core files (warnings are errors)
-        run: |
-          emacs -Q --batch -L . \
-            --eval "(setq byte-compile-error-on-warn t)" \
-            -f batch-byte-compile pkl-ts-mode.el pkl-ts-mode-eglot.el
+        run: make compile
 
       # The optional Evil integration requires Evil to byte-compile and to run
       # under real (non-stubbed) text objects.
@@ -56,12 +53,7 @@ jobs:
             --eval "(unless (package-installed-p 'evil) (package-refresh-contents) (package-install 'evil))"
 
       - name: Byte-compile the Evil integration (warnings are errors)
-        run: |
-          emacs -Q --batch --eval "(package-initialize)" -L . \
-            --eval "(setq byte-compile-error-on-warn t)" \
-            -f batch-byte-compile pkl-ts-mode-evil.el
+        run: make compile-evil
 
       - name: Run tests (with Evil)
-        run: |
-          emacs -Q --batch --eval "(package-initialize)" -L . \
-            -l pkl-ts-mode-tests.el -f ert-run-tests-batch-and-exit
+        run: make test-evil

@@ -48,16 +48,21 @@ the current object body.
 
 ## Development
 
-Run the test suite with:
-
 ```bash
-make test
+make test          # run the test suite
+make compile       # byte-compile the core files (no Evil needed)
+make compile-evil  # byte-compile the optional Evil integration (needs Evil)
 ```
 
 The tests need the Pkl tree-sitter grammar installed (`M-x
-treesit-install-language-grammar RET pkl RET`). Evil is optional: when it is
-not installed the test suite falls back to a small stub, so the core tests run
-without it.
+treesit-install-language-grammar RET pkl RET`).
+
+Evil is an **optional** dependency of the package, but a hard dependency of the
+optional `pkl-ts-mode-evil.el` file (it uses Evil's macros). The core files
+neither require nor compile against Evil, so `make compile` works without it;
+`make compile-evil` and `make test-evil` need Evil on the load path. When Evil
+is not installed the test suite falls back to a small stub, so the core tests
+still run.
 
 CI (see `.github/workflows/ci.yml`) runs on every push and pull request across
 Emacs 29 and 30. Each run byte-compiles the package with warnings treated as
