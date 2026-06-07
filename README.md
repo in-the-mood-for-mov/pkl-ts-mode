@@ -3,7 +3,7 @@
 [![CI](https://github.com/in-the-mood-for-mov/pkl-ts-mode/actions/workflows/ci.yml/badge.svg)](https://github.com/in-the-mood-for-mov/pkl-ts-mode/actions/workflows/ci.yml)
 
 This package adds support for the [Pkl language](https://github.com/apple/pkl) to Emacs.
-* indent rules
+* indent rules, with electric reindentation of closing `}`, `]`, and `)` as you type them
 * font locking through [`treesit`](https://www.gnu.org/software/emacs/manual/html_node/elisp/Parsing-Program-Source.html)
 * symbol navigation through [`imenu`](https://www.gnu.org/software/emacs/manual/html_node/emacs/Imenu.html) (classes, type aliases, methods, properties)
 * language service through [`eglot`](https://www.gnu.org/software/emacs/manual/html_mono/eglot.html)

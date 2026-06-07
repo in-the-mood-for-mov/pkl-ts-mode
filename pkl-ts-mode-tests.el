@@ -330,6 +330,43 @@ typealias Duration =
   Int|Float
 "))
 
+;;; --- Electric indentation ---
+
+(defun pkl-ts-mode-test-electric-insert (source char)
+  "Type CHAR at the end of SOURCE with electric indentation enabled.
+SOURCE is inserted into a `pkl-ts-mode' buffer, then CHAR is self-inserted
+at point. Return the resulting buffer string."
+  (with-temp-buffer
+    (pkl-ts-mode)
+    ;; Sets up the post-self-insert hook even when the global mode is off
+    ;; (as it is under noninteractive ERT runs).
+    (electric-indent-local-mode 1)
+    (insert source)
+    (let ((last-command-event char))
+      (self-insert-command 1))
+    (buffer-string)))
+
+(ert-deftest pkl-ts-mode-electric-closing-brace-deindents ()
+  "Typing } on an over-indented line snaps it to the parent."
+  (should
+   (equal
+    (pkl-ts-mode-test-electric-insert "class Foo {\n  bar = 1\n    " ?})
+    "class Foo {\n  bar = 1\n}")))
+
+(ert-deftest pkl-ts-mode-electric-closing-paren-deindents ()
+  "Typing ) on an over-indented line snaps it to the parent."
+  (should
+   (equal
+    (pkl-ts-mode-test-electric-insert "x = foo(\n  bar\n    " ?\))
+    "x = foo(\n  bar\n)")))
+
+(ert-deftest pkl-ts-mode-electric-closing-brace-leaves-correct-indent ()
+  "Typing } on an already-aligned line leaves the indentation intact."
+  (should
+   (equal
+    (pkl-ts-mode-test-electric-insert "class Foo {\n  bar = 1\n" ?})
+    "class Foo {\n  bar = 1\n}")))
+
 (defun pkl-ts-mode-test-scan-lists (source pos)
   "Insert SOURCE, propertize, scan-lists backward/forward from POS.
 Return (OPEN-POS . CLOSE-POS) of the enclosing parens."

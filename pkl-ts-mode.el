@@ -269,6 +269,13 @@ Install it with M-x treesit-install-language-grammar RET pkl RET"))
                 ("Property" "\\`\\(?:class\\|object\\)Property\\'" nil
                  pkl-ts-mode--imenu-name)))
 
+  ;; Reindent a line the moment its closing delimiter is typed, so an
+  ;; over-indented "}", "]", or ")" snaps back to align with its parent
+  ;; construct. Buffer-local, so electric indentation in other modes is
+  ;; untouched.
+  (setq-local electric-indent-chars
+              (append "}])" electric-indent-chars))
+
   (when (boundp 'evil-shift-width)
     (setq-local evil-shift-width pkl-ts-mode-indent-offset))
 
