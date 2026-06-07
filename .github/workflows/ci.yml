@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [trunk]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Emacs ${{ matrix.emacs_version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 29 is the documented floor (treesit support); also cover the latest.
+        emacs_version: ['29.4', '30.1']
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Emacs ${{ matrix.emacs_version }}
+        uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+
+      - name: Install the Pkl tree-sitter grammar
+        run: |
+          emacs -Q --batch -l ./pkl-ts-mode.el \
+            --eval "(treesit-install-language-grammar 'pkl)"
+
+      # Run the suite first, against the bundled Evil stub, so it loads from
+      # source before any Evil-compiled .elc exists on the load path.
+      - name: Run tests (without Evil)
+        run: make test
+
+      - name: Byte-compile core files (warnings are errors)
+        run: |
+          emacs -Q --batch -L . \
+            --eval "(setq byte-compile-error-on-warn t)" \
+            -f batch-byte-compile pkl-ts-mode.el pkl-ts-mode-eglot.el
+
+      # The optional Evil integration requires Evil to byte-compile and to run
+      # under real (non-stubbed) text objects.
+      - name: Install Evil
+        run: |
+          emacs -Q --batch \
+            --eval "(require 'package)" \
+            --eval "(add-to-list 'package-archives '(\"nongnu\" . \"https://elpa.nongnu.org/nongnu/\"))" \
+            --eval "(package-initialize)" \
+            --eval "(unless (package-installed-p 'evil) (package-refresh-contents) (package-install 'evil))"
+
+      - name: Byte-compile the Evil integration (warnings are errors)
+        run: |
+          emacs -Q --batch --eval "(package-initialize)" -L . \
+            --eval "(setq byte-compile-error-on-warn t)" \
+            -f batch-byte-compile pkl-ts-mode-evil.el
+
+      - name: Run tests (with Evil)
+        run: |
+          emacs -Q --batch --eval "(package-initialize)" -L . \
+            -l pkl-ts-mode-tests.el -f ert-run-tests-batch-and-exit

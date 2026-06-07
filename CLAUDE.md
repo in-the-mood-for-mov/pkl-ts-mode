@@ -52,13 +52,28 @@ bd close <id>         # Complete work
 
 ## Build & Test
 
-_Add your build and test commands here_
+Run the ERT suite (requires the Pkl tree-sitter grammar to be installed):
 
 ```bash
-# Example:
-# npm install
-# npm test
+make test
 ```
+
+Byte-compile with warnings treated as errors (what CI checks):
+
+```bash
+# Core files (no Evil needed)
+emacs -Q --batch -L . --eval "(setq byte-compile-error-on-warn t)" \
+  -f batch-byte-compile pkl-ts-mode.el pkl-ts-mode-eglot.el
+
+# Evil integration (requires Evil on the load path)
+emacs -Q --batch --eval "(package-initialize)" -L . \
+  --eval "(setq byte-compile-error-on-warn t)" \
+  -f batch-byte-compile pkl-ts-mode-evil.el
+```
+
+Evil is optional. When it is not installed, the test suite uses a stub
+(`pkl-ts-mode-tests.el`), so the core tests still run. CI exercises both the
+stub path and a real-Evil path; see `.github/workflows/ci.yml`.
 
 ## Architecture Overview
 

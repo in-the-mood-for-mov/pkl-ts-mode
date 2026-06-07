@@ -1,5 +1,7 @@
 # Emacs support for the Pkl language
 
+[![CI](https://github.com/in-the-mood-for-mov/pkl-ts-mode/actions/workflows/ci.yml/badge.svg)](https://github.com/in-the-mood-for-mov/pkl-ts-mode/actions/workflows/ci.yml)
+
 This package adds support for the [Pkl language](https://github.com/apple/pkl) to Emacs.
 * indent rules
 * font locking through [`treesit`](https://www.gnu.org/software/emacs/manual/html_node/elisp/Parsing-Program-Source.html)
@@ -43,6 +45,24 @@ binds the following text objects in visual and operator-pending state:
 
 For example, `dak` deletes the surrounding class and `vie` selects inside
 the current object body.
+
+## Development
+
+Run the test suite with:
+
+```bash
+make test
+```
+
+The tests need the Pkl tree-sitter grammar installed (`M-x
+treesit-install-language-grammar RET pkl RET`). Evil is optional: when it is
+not installed the test suite falls back to a small stub, so the core tests run
+without it.
+
+CI (see `.github/workflows/ci.yml`) runs on every push and pull request across
+Emacs 29 and 30. Each run byte-compiles the package with warnings treated as
+errors and runs the suite twice — once without Evil (the stub path) and once
+with Evil installed, which also byte-compiles the optional integration.
 
 The paragraph object (`p`) is comment-aware: inside a comment it selects the
 paragraph within the comments.

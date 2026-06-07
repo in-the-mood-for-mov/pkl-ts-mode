@@ -146,46 +146,46 @@ Return nil when point is not inside a comment."
               (goto-char cend))))
         (evil-range beg end)))))
 
-(evil-define-text-object pkl-ts-mode-outer-class (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-outer-class (count &optional beg end type)
   "Select around a class."
   (pkl-ts-mode--text-object-range '((clazz) @cap)))
 
-(evil-define-text-object pkl-ts-mode-inner-class (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-inner-class (count &optional beg end type)
   "Select inner class body."
   (pkl-ts-mode--shrink-range 1
    (pkl-ts-mode--text-object-range '((clazz (classBody) @cap)))))
 
-(evil-define-text-object pkl-ts-mode-outer-comment (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-outer-comment (count &optional beg end type)
   "Select around a comment."
   (pkl-ts-mode--comment-range nil))
 
-(evil-define-text-object pkl-ts-mode-inner-comment (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-inner-comment (count &optional beg end type)
   "Select inner comment text."
   (pkl-ts-mode--comment-range t))
 
-(evil-define-text-object pkl-ts-mode-outer-object (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-outer-object (count &optional beg end type)
   "Select around an object body."
   (pkl-ts-mode--text-object-range '((objectBody) @cap)))
 
-(evil-define-text-object pkl-ts-mode-inner-object (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-inner-object (count &optional beg end type)
   "Select inner object body."
   (pkl-ts-mode--shrink-range 1
    (pkl-ts-mode--text-object-range '((objectBody) @cap))))
 
-(evil-define-text-object pkl-ts-mode-outer-method (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-outer-method (count &optional beg end type)
   "Select around a method."
   (pkl-ts-mode--text-object-range '(([classMethod objectMethod]) @cap)))
 
-(evil-define-text-object pkl-ts-mode-inner-method (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-inner-method (count &optional beg end type)
   "Select inner method body."
   (pkl-ts-mode--shrink-range 1
    (pkl-ts-mode--text-object-range '(([classMethod objectMethod] (objectBody) @cap)))))
 
-(evil-define-text-object pkl-ts-mode-outer-string (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-outer-string (count &optional beg end type)
   "Select around a string literal."
   (pkl-ts-mode--text-object-range '([(slStringLiteralExpr) (mlStringLiteralExpr)] @cap)))
 
-(evil-define-text-object pkl-ts-mode-inner-string (count &optional _beg _end _type)
+(evil-define-text-object pkl-ts-mode-inner-string (count &optional beg end type)
   "Select inner string (excluding quotes)."
   (when-let ((node (pkl-ts-mode--capture-at-point
                     '([(slStringLiteralExpr) (mlStringLiteralExpr)] @cap) 'cap)))
