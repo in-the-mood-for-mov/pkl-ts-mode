@@ -21,7 +21,7 @@ Here is a basic `use-package` invocation for this package.
 (use-package pkl-ts-mode
   :ensure t
   :vc (:url "https://github.com/in-the-mood-for-mov/pkl-ts-mode.git")
-  :mode ("\\.pkl\\'" "\\.pcf\\'")
+  :defer t
   :config
   (pkl-ts-mode-eglot-init)
   (add-hook 'pkl-ts-mode-hook #'eglot-ensure))

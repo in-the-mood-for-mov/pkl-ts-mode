@@ -661,6 +661,24 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
                          ["one-value" "/opt/pkl/bin/pkl" "two-value"])))
       (delete-process (jsonrpc--process server)))))
 
+;;; --- auto-mode-alist ---
+
+(defun pkl-ts-mode-tests--auto-mode (file)
+  "Return the major mode `auto-mode-alist' selects for FILE."
+  (cdr (cl-find-if (lambda (entry) (string-match-p (car entry) file))
+                   auto-mode-alist)))
+
+(ert-deftest pkl-ts-mode-auto-mode-alist ()
+  "Pkl file names map to `pkl-ts-mode', including the extensionless PklProject."
+  ;; Registered unconditionally, so this holds regardless of grammar status.
+  (should (eq (pkl-ts-mode-tests--auto-mode "foo.pkl") 'pkl-ts-mode))
+  (should (eq (pkl-ts-mode-tests--auto-mode "/path/to/foo.pcf") 'pkl-ts-mode))
+  (should (eq (pkl-ts-mode-tests--auto-mode "/path/to/PklProject") 'pkl-ts-mode))
+  (should (eq (pkl-ts-mode-tests--auto-mode "PklProject") 'pkl-ts-mode))
+  ;; Does not over-match similarly named files.
+  (should-not (eq (pkl-ts-mode-tests--auto-mode "/path/MyPklProject") 'pkl-ts-mode))
+  (should-not (eq (pkl-ts-mode-tests--auto-mode "/path/PklProject.txt") 'pkl-ts-mode)))
+
 (provide 'pkl-ts-mode-tests)
 
 ;;; pkl-ts-mode-tests.el ends here

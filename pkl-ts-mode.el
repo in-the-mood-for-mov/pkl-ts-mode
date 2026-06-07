@@ -239,9 +239,11 @@ Install it with M-x treesit-install-language-grammar RET pkl RET"))
 
 (add-to-list 'treesit-language-source-alist pkl-ts-mode--grammar-source)
 
-(when (treesit-ready-p 'pkl)
+;;;###autoload
+(progn
   (add-to-list 'auto-mode-alist '("\\.pkl\\'" . pkl-ts-mode))
-  (add-to-list 'auto-mode-alist '("\\.pcf\\'" . pkl-ts-mode)))
+  (add-to-list 'auto-mode-alist '("\\.pcf\\'" . pkl-ts-mode))
+  (add-to-list 'auto-mode-alist '("\\(?:\\`\\|/\\)PklProject\\'" . pkl-ts-mode)))
 
 (with-eval-after-load 'evil
   (require 'pkl-ts-mode-evil))
