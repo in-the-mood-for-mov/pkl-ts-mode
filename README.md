@@ -121,16 +121,18 @@ structural landmarks rather than every line.
 ## Evil text objects
 
 When [`evil`](https://github.com/emacs-evil/evil) is installed, `pkl-ts-mode`
-binds the following text objects in visual and operator-pending state:
+binds the following text objects in visual and operator-pending state.
 
-| Key  | Object    | Outer (`a`) selects       | Inner (`i`) selects              |
-|------|-----------|---------------------------|----------------------------------|
-| `k`  | class     | the whole class           | the class body without braces    |
-| `c`  | comment   | the comment run           | the comment text without markers |
-| `e`  | object    | the whole object body     | the body without braces          |
-| `f`  | method    | the whole method          | the method body without braces   |
-| `p`  | paragraph | the paragraph + separator | the paragraph at point           |
-| `t`  | string    | the string with quotes    | the string contents              |
+| Key | Object              | Inner (`i`) selects          | Outer (`a`) selects |
+|-----|---------------------|------------------------------|---------------------|
+| `k` | class               | class body without braces    | + braces            |
+| `e` | object              | body without braces          | + braces            |
+| `f` | method              | method body without braces   | + braces            |
+| `c` | comment             | comment text without markers | + markers           |
+| `p` | paragraph           | paragraph (within comment)   | + separator         |
+| `t` | string              | string contents              | + quotes            |
+| `o` | symbol *(built-in)* | single identifier            | + whitespace        |
+| `O` | qualified symbol    | identifiers joined by `.`    | + whitespace        |
 
 For example, `dak` deletes the surrounding class and `vie` selects inside
 the current object body.
@@ -140,6 +142,12 @@ paragraph clamped to the comment — empty comment lines and blank lines act as
 separators — so `gqip` reflows comment prose without spilling into the
 surrounding code. Outside comments it behaves like Evil's stock paragraph
 object.
+
+The qualified-name object (`O`) is the larger sibling of Evil's built-in symbol
+object (`o`). Where `io` grabs one identifier component, `iO` grabs the whole
+dotted chain — `config.server.port`, including any trailing call like
+`config.server.port(8080)` — and works on dotted type and import names too. `aO`
+adds surrounding whitespace, like `ao`.
 
 ## Development
 

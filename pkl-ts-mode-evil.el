@@ -12,7 +12,8 @@
 ;;; Commentary:
 
 ;; Evil integration for pkl-ts-mode.  Provides tree-sitter powered text
-;; objects for classes, comments, objects, methods, and strings.
+;; objects for classes, comments, objects, methods, strings, and qualified
+;; names.
 ;;
 ;; Evil is a hard dependency of THIS file -- it uses Evil's macros
 ;; (`evil-define-text-object', `evil-define-key'), so byte-compiling it
@@ -54,6 +55,41 @@
   (when range
     (evil-range (+ (evil-range-beginning range) offset)
                 (- (evil-range-end range) offset))))
+
+(defun pkl-ts-mode--qualified-node-at (pos)
+  "Return the qualified-name node enclosing POS, or nil.
+For a member-access expression this is the outermost `qualifiedAccessExpr',
+so the whole chain (including any trailing call or subscript, e.g.
+`config.server.port(8080)') is one unit.  For a dotted type or import name it
+is the `qualifiedIdentifier' node.  A lone, unqualified identifier returns nil
+\(use the symbol object `o' for that)."
+  (let ((node (treesit-node-at pos)))
+    (while (and node
+                (not (member (treesit-node-type node)
+                             '("qualifiedIdentifier" "qualifiedAccessExpr"))))
+      (setq node (treesit-node-parent node)))
+    (when (and node (equal (treesit-node-type node) "qualifiedAccessExpr"))
+      (while (equal (treesit-node-type (treesit-node-parent node))
+                    "qualifiedAccessExpr")
+        (setq node (treesit-node-parent node))))
+    node))
+
+(defun pkl-ts-mode--add-symbol-whitespace (range)
+  "Grow RANGE over trailing, else leading, horizontal whitespace.
+Mirrors how `evil-a-symbol' extends `evil-inner-symbol': it eats spaces and
+tabs on the same line but never crosses a newline.  Return nil if RANGE is nil."
+  (when range
+    (let ((beg (evil-range-beginning range))
+          (end (evil-range-end range)))
+      (save-excursion
+        (goto-char end)
+        (skip-chars-forward " \t")
+        (if (> (point) end)
+            (setq end (point))
+          (goto-char beg)
+          (skip-chars-backward " \t")
+          (setq beg (point))))
+      (evil-range beg end))))
 
 (defun pkl-ts-mode--line-comment-at-point-p ()
   "Return non-nil when point is at a Pkl line or doc comment."
@@ -207,6 +243,19 @@ Return nil when point is not inside a comment."
      (if (equal (treesit-node-type node) "mlStringLiteralExpr") 3 1)
      (evil-range (treesit-node-start node) (treesit-node-end node)))))
 
+(evil-define-text-object pkl-ts-mode-inner-qualified (count &optional beg end type)
+  "Select a qualified name: a dotted access chain or qualified identifier.
+The whole chain is selected, including any trailing call or subscript.  This
+is the larger sibling of the symbol object `o', the way `W' is to `w'."
+  (when-let ((node (pkl-ts-mode--qualified-node-at (point))))
+    (evil-range (treesit-node-start node) (treesit-node-end node))))
+
+(evil-define-text-object pkl-ts-mode-outer-qualified (count &optional beg end type)
+  "Select a qualified name plus surrounding whitespace, like `ao'."
+  (pkl-ts-mode--add-symbol-whitespace
+   (when-let ((node (pkl-ts-mode--qualified-node-at (point))))
+     (evil-range (treesit-node-start node) (treesit-node-end node)))))
+
 (evil-define-text-object pkl-ts-mode-inner-paragraph (count &optional beg end type)
   "Inner paragraph, clamped to the surrounding comment when point is in one.
 Outside comments this behaves like the stock `evil-inner-paragraph'."
@@ -231,7 +280,9 @@ Outside comments this behaves like the stock `evil-a-paragraph'."
   "ap" #'pkl-ts-mode-outer-paragraph
   "ip" #'pkl-ts-mode-inner-paragraph
   "at" #'pkl-ts-mode-outer-string
-  "it" #'pkl-ts-mode-inner-string)
+  "it" #'pkl-ts-mode-inner-string
+  "aO" #'pkl-ts-mode-outer-qualified
+  "iO" #'pkl-ts-mode-inner-qualified)
 
 (provide 'pkl-ts-mode-evil)
 

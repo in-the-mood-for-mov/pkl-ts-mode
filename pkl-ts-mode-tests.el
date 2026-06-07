@@ -582,6 +582,56 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
      #'pkl-ts-mode-inner-paragraph)
     "/* a\n   b")))
 
+(ert-deftest pkl-ts-mode-evil-qualified-member-access ()
+  "Inner qualified selects the whole dotted access chain."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "x = config.server.port\n" "server" #'pkl-ts-mode-inner-qualified)
+    "config.server.port")))
+
+(ert-deftest pkl-ts-mode-evil-qualified-from-leftmost-component ()
+  "The chain is selected even from its first component."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "x = config.server.port\n" "config" #'pkl-ts-mode-inner-qualified)
+    "config.server.port")))
+
+(ert-deftest pkl-ts-mode-evil-qualified-keeps-argument-list ()
+  "A trailing call is part of the chain, not trimmed away."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "x = config.server.port(8080)\n" "port" #'pkl-ts-mode-inner-qualified)
+    "config.server.port(8080)")))
+
+(ert-deftest pkl-ts-mode-evil-qualified-type-name ()
+  "A dotted type name is a qualified identifier."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "host: my.pkg.Type = 1\n" "pkg" #'pkl-ts-mode-inner-qualified)
+    "my.pkg.Type")))
+
+(ert-deftest pkl-ts-mode-evil-qualified-outer-eats-whitespace ()
+  "Outer qualified extends over trailing whitespace like `ao'."
+  (should
+   (equal
+    (pkl-ts-mode-test-text-object
+     "x = config.server.port   next\n" "server"
+     #'pkl-ts-mode-outer-qualified)
+    "config.server.port   ")))
+
+(ert-deftest pkl-ts-mode-evil-qualified-ignores-lone-identifier ()
+  "A bare, unqualified identifier is not a qualified name."
+  (with-temp-buffer
+    (pkl-ts-mode)
+    (insert "x = foo\n")
+    (goto-char (point-min))
+    (search-forward "foo")
+    (should-not (pkl-ts-mode--qualified-node-at (point)))))
+
 (ert-deftest pkl-ts-mode-evil-text-object-keybindings ()
   "Evil text object keys use c for comments, k for classes, and t for strings."
   (skip-unless (bound-and-true-p pkl-ts-mode-test-evil-stub))
@@ -600,7 +650,11 @@ Return (OPEN-POS . CLOSE-POS) of the enclosing parens."
   (should (eq (lookup-key pkl-ts-mode-map (kbd "at"))
               #'pkl-ts-mode-outer-string))
   (should (eq (lookup-key pkl-ts-mode-map (kbd "it"))
-              #'pkl-ts-mode-inner-string)))
+              #'pkl-ts-mode-inner-string))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "aO"))
+              #'pkl-ts-mode-outer-qualified))
+  (should (eq (lookup-key pkl-ts-mode-map (kbd "iO"))
+              #'pkl-ts-mode-inner-qualified)))
 
 ;;; --- Font-lock: string interpolation ---
 
