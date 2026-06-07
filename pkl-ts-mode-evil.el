@@ -196,56 +196,54 @@ Return nil when point is not inside a comment."
               (goto-char cend))))
         (evil-range beg end)))))
 
-;; Each text object declares only the arguments its body uses: (count) for the
-;; range-only objects, (count &optional beg end) for the paragraph objects.
-;; (count) is `evil-define-text-object''s documented canonical arglist; beg/end/
-;; type are optional extras. Do NOT restore the full (count &optional beg end
-;; type): current (rolling) Evil shadows `type' with its own let-binding and no
-;; longer references beg/end, so the extra params are flagged unused and fail
-;; `make compile-evil' (byte-compile-error-on-warn). Underscore-prefixing fails
-;; the other way on released Evil ("_type not left unused"), and a `&rest'
-;; catch-all fails the same way as the named params -- only declaring exactly
-;; what's used is clean on both Evil channels under -Werror.
-(evil-define-text-object pkl-ts-mode-outer-class (count)
+;; Text objects MUST keep evil's full (count &optional beg end type) arglist:
+;; evil's "<v>" interactive code passes beg/end/type at call time, so a shorter
+;; arglist throws wrong-number-of-arguments the moment the object is used (e.g.
+;; `viO').  The catch: current (rolling/MELPA) Evil's macro leaves these params
+;; unused, so `make compile-evil' warns under -Werror and the non-blocking
+;; rolling CI job is red.  That is accepted on purpose until the Evil macro fix
+;; reaches a release on ELPA; no arglist is both call-safe and -Werror-clean on
+;; the rolling macro (underscore-prefixing and a `&rest' catch-all don't help).
+(evil-define-text-object pkl-ts-mode-outer-class (count &optional beg end type)
   "Select around a class."
   (pkl-ts-mode--text-object-range '((clazz) @cap)))
 
-(evil-define-text-object pkl-ts-mode-inner-class (count)
+(evil-define-text-object pkl-ts-mode-inner-class (count &optional beg end type)
   "Select inner class body."
   (pkl-ts-mode--shrink-range 1
    (pkl-ts-mode--text-object-range '((clazz (classBody) @cap)))))
 
-(evil-define-text-object pkl-ts-mode-outer-comment (count)
+(evil-define-text-object pkl-ts-mode-outer-comment (count &optional beg end type)
   "Select around a comment."
   (pkl-ts-mode--comment-range nil))
 
-(evil-define-text-object pkl-ts-mode-inner-comment (count)
+(evil-define-text-object pkl-ts-mode-inner-comment (count &optional beg end type)
   "Select inner comment text."
   (pkl-ts-mode--comment-range t))
 
-(evil-define-text-object pkl-ts-mode-outer-object (count)
+(evil-define-text-object pkl-ts-mode-outer-object (count &optional beg end type)
   "Select around an object body."
   (pkl-ts-mode--text-object-range '((objectBody) @cap)))
 
-(evil-define-text-object pkl-ts-mode-inner-object (count)
+(evil-define-text-object pkl-ts-mode-inner-object (count &optional beg end type)
   "Select inner object body."
   (pkl-ts-mode--shrink-range 1
    (pkl-ts-mode--text-object-range '((objectBody) @cap))))
 
-(evil-define-text-object pkl-ts-mode-outer-method (count)
+(evil-define-text-object pkl-ts-mode-outer-method (count &optional beg end type)
   "Select around a method."
   (pkl-ts-mode--text-object-range '(([classMethod objectMethod]) @cap)))
 
-(evil-define-text-object pkl-ts-mode-inner-method (count)
+(evil-define-text-object pkl-ts-mode-inner-method (count &optional beg end type)
   "Select inner method body."
   (pkl-ts-mode--shrink-range 1
    (pkl-ts-mode--text-object-range '(([classMethod objectMethod] (objectBody) @cap)))))
 
-(evil-define-text-object pkl-ts-mode-outer-string (count)
+(evil-define-text-object pkl-ts-mode-outer-string (count &optional beg end type)
   "Select around a string literal."
   (pkl-ts-mode--text-object-range '([(slStringLiteralExpr) (mlStringLiteralExpr)] @cap)))
 
-(evil-define-text-object pkl-ts-mode-inner-string (count)
+(evil-define-text-object pkl-ts-mode-inner-string (count &optional beg end type)
   "Select inner string (excluding quotes)."
   (when-let ((node (pkl-ts-mode--capture-at-point
                     '([(slStringLiteralExpr) (mlStringLiteralExpr)] @cap) 'cap)))
@@ -253,26 +251,26 @@ Return nil when point is not inside a comment."
      (if (equal (treesit-node-type node) "mlStringLiteralExpr") 3 1)
      (evil-range (treesit-node-start node) (treesit-node-end node)))))
 
-(evil-define-text-object pkl-ts-mode-inner-qualified (count)
+(evil-define-text-object pkl-ts-mode-inner-qualified (count &optional beg end type)
   "Select a qualified name: a dotted access chain or qualified identifier.
 The whole chain is selected, including any trailing call or subscript.  This
 is the larger sibling of the symbol object `o', the way `W' is to `w'."
   (when-let ((node (pkl-ts-mode--qualified-node-at (point))))
     (evil-range (treesit-node-start node) (treesit-node-end node))))
 
-(evil-define-text-object pkl-ts-mode-outer-qualified (count)
+(evil-define-text-object pkl-ts-mode-outer-qualified (count &optional beg end type)
   "Select a qualified name plus surrounding whitespace, like `ao'."
   (pkl-ts-mode--add-symbol-whitespace
    (when-let ((node (pkl-ts-mode--qualified-node-at (point))))
      (evil-range (treesit-node-start node) (treesit-node-end node)))))
 
-(evil-define-text-object pkl-ts-mode-inner-paragraph (count &optional beg end)
+(evil-define-text-object pkl-ts-mode-inner-paragraph (count &optional beg end type)
   "Inner paragraph, clamped to the surrounding comment when point is in one.
 Outside comments this behaves like the stock `evil-inner-paragraph'."
   (or (pkl-ts-mode--comment-paragraph-range nil)
       (evil-select-inner-object 'evil-paragraph beg end type count)))
 
-(evil-define-text-object pkl-ts-mode-outer-paragraph (count &optional beg end)
+(evil-define-text-object pkl-ts-mode-outer-paragraph (count &optional beg end type)
   "A paragraph, clamped to the surrounding comment when point is in one.
 Outside comments this behaves like the stock `evil-a-paragraph'."
   (or (pkl-ts-mode--comment-paragraph-range t)
