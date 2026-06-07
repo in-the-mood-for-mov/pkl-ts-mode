@@ -5,7 +5,7 @@
 ;; Author: Simon Génier <simon.genier@protonmail.com>
 ;; Assisted-by: Claude:claude-opus-4-8
 ;; Maintainer: Simon Génier <simon.genier@protonmail.com>
-;; Version: 0.4.0
+;; Version: 0.6.1
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: languages
 ;; URL: https://github.com/in-the-mood-for-mov/pkl-ts-mode
