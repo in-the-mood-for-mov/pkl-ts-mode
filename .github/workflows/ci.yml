@@ -14,13 +14,22 @@ permissions:
 
 jobs:
   test:
-    name: Emacs ${{ matrix.emacs_version }}
+    name: Emacs ${{ matrix.emacs_version }} · evil ${{ matrix.evil_channel }}
     runs-on: ubuntu-latest
+    # Rolling Evil (MELPA master) is a moving target: surface breakage without
+    # gating merges. Stable Evil (NonGNU release) stays a blocking gate.
+    continue-on-error: ${{ matrix.evil_channel == 'rolling' }}
     strategy:
       fail-fast: false
       matrix:
-        # 29 is the documented floor (treesit support); also cover the latest.
-        emacs_version: ['29.4', '30.1']
+        # 29 is the documented floor (treesit support); 30 is the latest.
+        # Evil "stable" = NonGNU ELPA release; "rolling" = MELPA master snapshot.
+        # Their evil-define-text-object macro expansions diverge (see pmo-p0n),
+        # so cover both. Rolling runs on the latest Emacs only.
+        include:
+          - { emacs_version: '29.4', evil_channel: stable }
+          - { emacs_version: '30.1', evil_channel: stable }
+          - { emacs_version: '30.1', evil_channel: rolling }
     steps:
       - uses: actions/checkout@v6
 
@@ -44,11 +53,16 @@ jobs:
 
       # The optional Evil integration requires Evil to byte-compile and to run
       # under real (non-stubbed) text objects.
-      - name: Install Evil
+      # Stable pulls Evil from NonGNU ELPA; rolling also enables MELPA, whose
+      # date-versioned master snapshot outranks the NonGNU release and wins.
+      - name: Install Evil (${{ matrix.evil_channel }})
+        env:
+          EVIL_CHANNEL: ${{ matrix.evil_channel }}
         run: |
           emacs -Q --batch \
             --eval "(require 'package)" \
             --eval "(add-to-list 'package-archives '(\"nongnu\" . \"https://elpa.nongnu.org/nongnu/\"))" \
+            --eval "(when (equal (getenv \"EVIL_CHANNEL\") \"rolling\") (add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\")))" \
             --eval "(package-initialize)" \
             --eval "(unless (package-installed-p 'evil) (package-refresh-contents) (package-install 'evil))"
 
